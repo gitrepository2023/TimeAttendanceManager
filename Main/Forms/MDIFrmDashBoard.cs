@@ -561,6 +561,13 @@ namespace TimeAttendanceManager.Main.Forms
                 // Update Tag of the button to match the clicked item’s Tag
                 dropDown.Tag = e.ClickedItem.Tag;
 
+                // Sync to properties
+                ClassGlobalVariables.pubSelectedEmpCategoryText = e.ClickedItem.Text;
+                if (int.TryParse(e.ClickedItem.Tag?.ToString(), out int id))
+                    ClassGlobalVariables.pubSelectedEmpCategoryId = id;
+                else
+                    ClassGlobalVariables.pubSelectedEmpCategoryId = null;
+
                 // Load TreeView
                 // await LoadTreeViewMenuAsync();
                 await LoadTreeViewAsync();
@@ -1634,6 +1641,14 @@ namespace TimeAttendanceManager.Main.Forms
                 {
                     TsBtnDrpEmpCatg.Text = selectedItem.Text;
                     TsBtnDrpEmpCatg.Tag = selectedItem.Tag; // keep Text and Tag in sync
+
+                    // Sync to properties
+                    ClassGlobalVariables.pubSelectedEmpCategoryText = selectedItem.Text;
+                    if (int.TryParse(selectedItem.Tag?.ToString(), out int id))
+                        ClassGlobalVariables.pubSelectedEmpCategoryId = id;
+                    else
+                        ClassGlobalVariables.pubSelectedEmpCategoryId = null;
+
                 }
 
 

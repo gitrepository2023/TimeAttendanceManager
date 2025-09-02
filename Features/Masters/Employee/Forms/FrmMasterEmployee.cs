@@ -1,9 +1,4 @@
-﻿using TimeAttendanceManager.Auth.Classes;
-using TimeAttendanceManager.Features.Masters.Employee.Classes;
-using TimeAttendanceManager.Helpers.Classes;
-using TimeAttendanceManager.Main.Classes;
-using TimeAttendanceManager.Main.Forms;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -14,6 +9,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TimeAttendanceManager.Auth.Classes;
+using TimeAttendanceManager.Contractors.Models;
+using TimeAttendanceManager.Features.Masters.Employee.Classes;
+using TimeAttendanceManager.Features.Masters.Employee.Models;
+using TimeAttendanceManager.Helpers.Classes;
+using TimeAttendanceManager.Main.Classes;
+using TimeAttendanceManager.Main.Forms;
 
 namespace TimeAttendanceManager.Features.Masters.Employee.Forms
 {
@@ -54,6 +56,8 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
 
         #region "LocalVariables"
         private EmployeeMasterFilter mFilter = new EmployeeMasterFilter();
+        private MasterEmployee myDataTable = new MasterEmployee();
+        private bool _isFillingMenuGroup; // optional reentrancy guard
         #endregion
 
         #region "MyBase_Load"
@@ -232,18 +236,73 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
             try
             {
 
-                // Load UnitCode where access is granted
+                // Load combo boxes with data
+                this.CmbUnitCode.SelectedIndexChanged -= CmbUnitCode_SelectedIndexChanged;
                 await ClassGlobalFunctions.FillComboBoxUnitCodeHasAccessAsync(
-                    displayMember: "UnitCode",
-                    valueMember: "Id",
-                    comboBox: CmbUnitCode,
-                    tableName: "Companies",
-                    userRowGuid: ClassGlobalVariables.pubLoginUserRowGuid,
-                    fallbackUnitCode: ClassGlobalVariables.pubUnitCode);
-
-                await ClassGlobalFunctions.FillComboBoxAsync("GenderCode", "Id", CmbEmpGender, "Master_Genders", ClassGlobalVariables.pubUnitCode);
+                   displayMember: "UnitCode",
+                   valueMember: "Id",
+                   comboBox: CmbUnitCode,
+                   tableName: "Companies",
+                   userRowGuid: ClassGlobalVariables.pubLoginUserRowGuid,
+                   fallbackUnitCode: ClassGlobalVariables.pubUnitCode);
+                this.CmbUnitCode.SelectedIndexChanged += CmbUnitCode_SelectedIndexChanged;
 
                 await FillUnitCodeAsync();
+
+                // Employee Type
+                await ClassGlobalFunctions.FillComboForUnitCodeAsync(
+                    "CatgName",
+                    "Id",
+                    CmbEmploymentType,
+                    "v_Master_EmploymentTypes",
+                    ClassGlobalVariables.pubUnitCode);
+
+                CmbUnitCode.Text = ClassGlobalVariables.pubUnitCode;
+
+                // Get selected UnitCode globally
+                // DataBound item text (not value) is stored globally for use in other forms
+                string defaultUnitCode = ClassGlobalVariables.pubUnitCode;
+                bool foundUnitCode = false;
+                foreach (var item in CmbUnitCode.Items)
+                {
+                    if (CmbUnitCode.GetItemText(item) == defaultUnitCode)
+                    {
+                        CmbUnitCode.SelectedItem = item;
+                        foundUnitCode = true;
+                        break;
+                    }
+                }
+
+                if (!foundUnitCode)
+                {
+                    CmbUnitCode.SelectedIndex = -1; // not found in list
+                }
+                CmbUnitCode.Enabled = false;// disable to prevent changes
+
+                // Get selected employee category globally
+                // DataBound item text (not value) is stored globally for use in other forms
+                string empCategory = ClassGlobalVariables.pubSelectedEmpCategoryText;
+                bool foundEmploymentType = false;
+                foreach (var item in CmbEmploymentType.Items)
+                {
+                    if (CmbEmploymentType.GetItemText(item) == empCategory)
+                    {
+                        CmbEmploymentType.SelectedItem = item;
+                        foundEmploymentType = true;
+                        break;
+                    }
+                }
+
+                if (!foundEmploymentType)
+                {
+                    CmbEmploymentType.SelectedIndex = -1; // not found in list
+                }
+                CmbEmploymentType.Enabled = false;// disable to prevent changes
+
+                await ClassGlobalFunctions.FillComboBoxAsync("GenderCode", "Id", CmbEmpBloodGroup, "Master_Genders", ClassGlobalVariables.pubUnitCode);
+                await ClassGlobalFunctions.FillComboBoxAsync("MaritalStatus", "Id", CmbEmpMaritalStatus, "Master_MaritalStatus", ClassGlobalVariables.pubUnitCode);
+                await ClassGlobalFunctions.FillComboBoxAsync("Name", "Id", CmbEmpBloodGroup, "Master_BloodGroups", ClassGlobalVariables.pubUnitCode);
+                await ClassGlobalFunctions.FillComboBoxAsync("FullName", "Id", CmbWeekNames, "Master_WeekNames", ClassGlobalVariables.pubUnitCode);
 
                 // Get SQL Server Today's date
                 DateTime safeDate = ClassGlobalVariables.SqlServerTodayDate.HasValue
@@ -251,9 +310,9 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                     : DateTime.Today;
 
                 // Format DatePicker
-                ClassSafeValueHelpers.ConfigureDateTimePicker(DtPickEmpDOB, safeDate);
-                ClassSafeValueHelpers.ConfigureDateTimePicker(DtPickDOJ, safeDate);
-                
+                ClassSafeValueHelpers.ConfigureDateTimePicker(DtPickEmpDOB, safeDate.AddYears(-18));
+                ClassSafeValueHelpers.ConfigureDateTimePicker(DtPickDOJ, safeDate.AddDays(-5));
+
                 // Retrieve XML from your existing DB helper
                 await ReadUserLoginDefaultXmlAsync();
 
@@ -274,6 +333,100 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
             }
         }
 
+        #endregion
+
+        #region "CmbUnitCode_SelectedIndexChanged"
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void CmbUnitCode_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_isFillingMenuGroup) return; // avoid overlapping calls if user clicks fast
+            _isFillingMenuGroup = true;
+            try
+            {
+
+                string mUnitCode = (CmbUnitCode == null || string.IsNullOrWhiteSpace(CmbUnitCode.Text))
+                   ? ClassGlobalVariables.pubUnitCode
+                   : CmbUnitCode.Text;
+
+                // Duty Location
+                await ClassGlobalFunctions.FillComboForUnitCodeAsync(
+                    "Name",
+                    "Id",
+                    CmbDutyLocation,
+                    "Master_DutyLocations",
+                    mUnitCode);
+
+                // Department
+                await ClassGlobalFunctions.FillComboForUnitCodeAsync(
+                    "DepartmentCode",
+                    "Id",
+                    CmbDept,
+                    "Master_Departments",
+                    mUnitCode);
+
+                // Designation
+                await ClassGlobalFunctions.FillComboForUnitCodeAsync(
+                    "Name",
+                    "Id",
+                    CmbDesig,
+                    "Master_Designations",
+                    mUnitCode);
+
+                // Job Category
+                await ClassGlobalFunctions.FillComboForUnitCodeAsync(
+                    "Name",
+                    "Id",
+                    CmbJobCatg,
+                    "Master_JobCategories",
+                    mUnitCode);
+
+                // Job Grade
+                await ClassGlobalFunctions.FillComboForUnitCodeAsync(
+                    "Name",
+                    "Id",
+                    CmbJobGrade,
+                    "Master_GradeCodes",
+                    mUnitCode);
+
+                // Batch Code
+                await ClassGlobalFunctions.FillComboForUnitCodeAsync(
+                    "Name",
+                    "Id",
+                    CmbBatchCode,
+                    "Master_BatchCodes",
+                    mUnitCode);
+
+                // Card Color
+                await ClassGlobalFunctions.FillComboForUnitCodeAsync(
+                    "Name",
+                    "Id",
+                    CmbCardColor,
+                    "Master_CardColors",
+                    mUnitCode);
+
+                // Contractor Name
+                await ClassGlobalFunctions.FillComboForUnitCodeAsync(
+                    "ContractorName",
+                    "Id",
+                    CmbContractorName,
+                    "Master_Contractors",
+                    mUnitCode);
+
+
+            }
+            catch (Exception ex)
+            {
+                ShowErrorMessage(ex.Message, "CmbUnitCode_SelectedIndexChanged");
+            }
+            finally
+            {
+                _isFillingMenuGroup = false;
+            }
+        }
         #endregion
 
         #region "TsBtnHelp_Click"
@@ -508,7 +661,7 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 // Remove Set Errors
                 ClassLayoutHelper.ClearErrorsTableLayout(TableLayout1, errorProvider1);
                 ClassLayoutHelper.ClearErrorsTableLayout(TableLayout2, errorProvider1);
-                
+
                 ClassLayoutHelper.ClearControlsTableLayout(TableLayout1);
                 ClassLayoutHelper.ClearControlsTableLayout(TableLayout2);
 
@@ -607,6 +760,245 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
             }
         }
 
+
+        #endregion
+
+        #region "ValidateInputAsync"
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private async Task<bool> ValidateInputAsync()
+        {
+            try
+            {
+                TsLblInputStatus.ForeColor = Color.Red;
+                TsLblInputStatus.Text = "Validating data. Please wait...";
+
+                // Remove existing errors
+                ClassLayoutHelper.ClearErrorsTableLayout(TableLayout1, errorProvider1);
+
+                // Required control validations
+                ClassValidationHelper.ValidateControl(CmbUnitCode, "Plant Code is required.", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateControl(TxtEmpName, "Name is required.", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateControl(TxtEmpFatherName, "Father Name is required.", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateControl(CmbEmpGender, "Gender is required.", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateControl(CmbEmpMaritalStatus, "Marital Status is required.", errorProvider1, TsLblInputStatus);
+
+                ClassValidationHelper.ValidateControl(CmbEmploymentType, "Employment Type is required.", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateControl(CmbDutyLocation, "Duty Location is required.", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateControl(CmbDept, "Department is required.", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateControl(CmbDesig, "Designation is required.", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateControl(CmbJobCatg, "Job Categorg is required.", errorProvider1, TsLblInputStatus);
+
+                // Check if the checkbox is unchecked(i.e., date is not provided)
+                if (!DtPickEmpDOB.Checked)
+                {
+                    throw new ArgumentException("Date of Birth is required.");
+                }
+
+                // ensure date-only
+                // equal is allowed; only future is disallowed
+                DateTime safeDate = ClassGlobalVariables.SqlServerTodayDate.HasValue
+                    ? ClassGlobalVariables.SqlServerTodayDate.Value.Date
+                    : DateTime.Today;
+
+                DateTime birthDate = DtPickEmpDOB.Value.Date;
+
+                // Total days lived
+                double totalDays = (safeDate - birthDate).TotalDays;
+
+                // Convert to years (365.25 accounts for leap years)
+                double exactAge = totalDays / 365.25;
+
+                // Validate Age(must be >= 18)
+                if (exactAge < 18.0)
+                {
+                    string errorMessage = $"Age must be 18 years or above. Current age is {exactAge:F1} years.";
+                    errorProvider1.SetError(DtPickEmpDOB, errorMessage);
+                    throw new Exception(errorMessage);
+                }
+
+                if (!DtPickDOJ.Checked)
+                {
+                    throw new ArgumentException("Date of Joining is required.");
+                }
+
+                DateTime validDate = safeDate;
+                DateTime joiningDate = DtPickDOJ.Value.Date;
+                if (joiningDate > validDate)
+                {
+                    string errorMessage = "Joining Date cannot be in the future.";
+                    errorProvider1.SetError(DtPickDOJ, errorMessage);
+                    throw new Exception(errorMessage);
+                }
+
+                // Length validations
+                ClassValidationHelper.ValidateTextBoxLength(TxtEmpCode, 20, "Employee Code", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateTextBoxLength(TxtEmpName, 50, "Name", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateTextBoxLength(TxtEmpFatherName, 50, "Father Name", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateTextBoxLength(TxtEmpLastName, 50, "Last Name", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateTextBoxLength(TxtEmpDisplayName, 100, "Display Name", errorProvider1, TsLblInputStatus);
+                ClassValidationHelper.ValidateTextBoxLength(TxtReportingMgrCode, 20, "Reporting Manager", errorProvider1, TsLblInputStatus);
+
+                // Dropdown value validations
+                int? selectedUnitId = ClassValidationHelper.ValidateCmbSelectedValue(CmbUnitCode, "Plant Code is required.", errorProvider1, TsLblInputStatus);
+                int? selectedGenderId = ClassValidationHelper.ValidateCmbSelectedValue(CmbEmpGender, "Gender is required.", errorProvider1, TsLblInputStatus);
+                int? selectedMaritalStatusId = ClassValidationHelper.ValidateCmbSelectedValue(CmbEmpMaritalStatus, "Marital Status is required.", errorProvider1, TsLblInputStatus);
+
+                int? selectedBloodGroupId = null;
+                if (!string.IsNullOrWhiteSpace(CmbEmpBloodGroup.Text))
+                {
+                    selectedBloodGroupId = ClassValidationHelper.ValidateCmbSelectedValue(CmbEmpBloodGroup, "Please select a valid Blood Group from the list.", errorProvider1, TsLblInputStatus);
+                }
+
+                int? selectedEmploymentTypeId = ClassValidationHelper.ValidateCmbSelectedValue(CmbEmploymentType, "Employment Type is required.", errorProvider1, TsLblInputStatus);
+                int? selectedDutyLocationId = ClassValidationHelper.ValidateCmbSelectedValue(CmbDutyLocation, "Duty Location is required.", errorProvider1, TsLblInputStatus);
+                int? selectedDeptId = ClassValidationHelper.ValidateCmbSelectedValue(CmbDept, "Department is required.", errorProvider1, TsLblInputStatus);
+                int? selectedDesigId = ClassValidationHelper.ValidateCmbSelectedValue(CmbDesig, "Designation is required.", errorProvider1, TsLblInputStatus);
+                int? selectedJobCatgId = ClassValidationHelper.ValidateCmbSelectedValue(CmbJobCatg, "Job Category is required.", errorProvider1, TsLblInputStatus);
+
+                int? selectedWeekNameId = null;
+                if (!string.IsNullOrWhiteSpace(CmbWeekNames.Text))
+                {
+                    selectedWeekNameId = ClassValidationHelper.ValidateCmbSelectedValue(CmbWeekNames, "Please select a valid Weekly Off Day from the list.", errorProvider1, TsLblInputStatus);
+                }
+
+                int? selectedJobGradeId = null;
+                if (!string.IsNullOrWhiteSpace(CmbJobGrade.Text))
+                {
+                    selectedJobGradeId = ClassValidationHelper.ValidateCmbSelectedValue(CmbJobGrade, "Please select a valid Job Grade from the list.", errorProvider1, TsLblInputStatus);
+                }
+
+                int? selectedBatchCodeId = null;
+                if (!string.IsNullOrWhiteSpace(CmbBatchCode.Text))
+                {
+                    selectedBatchCodeId = ClassValidationHelper.ValidateCmbSelectedValue(CmbBatchCode, "Please select a valid Batch Code from the list.", errorProvider1, TsLblInputStatus);
+                }
+
+                int? selectedCardColorId = null;
+                if (!string.IsNullOrWhiteSpace(CmbBatchCode.Text))
+                {
+                    selectedCardColorId = ClassValidationHelper.ValidateCmbSelectedValue(CmbCardColor, "Please select a valid Card Color from the list.", errorProvider1, TsLblInputStatus);
+                }
+
+                int? selectedContractorId = null;
+                if (!string.IsNullOrWhiteSpace(CmbContractorName.Text))
+                {
+                    selectedContractorId = ClassValidationHelper.ValidateCmbSelectedValue(CmbContractorName, "Please select a valid Contractor Name from the list.", errorProvider1, TsLblInputStatus);
+                }
+
+                string defaultUnitCode = CmbUnitCode.Text;
+
+                string connectionString = ClassGlobalFunctions.GetConnectionStringByUnitCode(defaultUnitCode);
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException("Connection string cannot be empty");
+                }
+
+                // Populate data table
+                myDataTable = new MasterEmployee();
+
+                // Id
+                // Set null as we want to insert new row
+                myDataTable.Id = null;
+
+                // UnitCode
+                myDataTable.UnitCode = !string.IsNullOrEmpty(CmbUnitCode.Text)
+                    ? CmbUnitCode.Text
+                    : null;
+
+                // EmployeeName
+                myDataTable.EmployeeName = !string.IsNullOrEmpty(TxtEmpName.Text)
+                    ? ClassStringHelpers.CleanAndUpperCase(TxtEmpName.Text)
+                    : null;
+
+                // FathersName
+                myDataTable.FathersName = !string.IsNullOrEmpty(TxtEmpFatherName.Text)
+                    ? ClassStringHelpers.CleanAndUpperCase(TxtEmpFatherName.Text)
+                    : null;
+
+                // LastName
+                myDataTable.LastName = !string.IsNullOrEmpty(TxtEmpLastName.Text)
+                    ? ClassStringHelpers.CleanAndUpperCase(TxtEmpLastName.Text)
+                    : null;
+
+                // EmployeeDisplayName
+                myDataTable.EmployeeDisplayName = !string.IsNullOrEmpty(TxtEmpDisplayName.Text)
+                    ? ClassStringHelpers.CleanAndUpperCase(TxtEmpDisplayName.Text)
+                    : null;
+
+                // DateOfBirth
+                myDataTable.DateOfBirth = DtPickEmpDOB.Checked ? DtPickEmpDOB.Value.Date : (DateTime?)null;
+
+                // DateOfJoining
+                myDataTable.DateOfJoining = DtPickDOJ.Checked ? DtPickDOJ.Value.Date : (DateTime?)null;
+
+                // EmpGenderId
+                myDataTable.EmpGenderId = selectedGenderId;
+
+                // EmployeeTypeId
+                myDataTable.EmployeeTypeId = selectedEmploymentTypeId;
+
+                // DutyLocationId
+                myDataTable.DutyLocationId = selectedDutyLocationId;
+
+                // DesignationId
+                myDataTable.DesignationId = selectedDesigId;
+
+                // DepartmentId
+                myDataTable.DepartmentId = selectedDeptId;
+
+                // JobCategoryId
+                myDataTable.JobCategoryId = selectedJobCatgId;
+
+                // GradeCodeId
+                myDataTable.GradeCodeId = selectedJobGradeId;
+
+                // BatchCodeId
+                myDataTable.BatchCodeId = selectedBatchCodeId;
+
+                // ContractorId
+                myDataTable.ContractorId = selectedContractorId;
+
+                // CardColorId
+                myDataTable.CardColorId = selectedCardColorId;
+
+                // MaritalStatusId
+                myDataTable.MaritalStatusId = selectedMaritalStatusId;
+
+                // WeeklyOffDayId
+                myDataTable.WeeklyOffDayId = selectedWeekNameId;
+
+                // BloodGroupId
+                myDataTable.BloodGroupId = selectedBloodGroupId;
+
+                // ReportingManagerCode
+                myDataTable.ReportingManagerCode = !string.IsNullOrEmpty(TxtReportingMgrCode.Text)
+                    ? ClassStringHelpers.CleanAndUpperCase(TxtReportingMgrCode.Text)
+                    : null;
+
+                // IPAddress
+                myDataTable.IpAddsCreated = ClassGlobalVariables.pubHostIPAddress;
+
+                // UserCreatedRowGuid
+                myDataTable.UserRowGuid = ClassGlobalVariables.pubLoginUserRowGuid;
+
+                // HostName
+                myDataTable.HostName = ClassGlobalVariables.pubDNSHostName;
+
+                TsLblInputStatus.ForeColor = Color.DarkBlue;
+                TsLblInputStatus.Text = "Done...";
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Validate Input", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+        }
 
         #endregion
 

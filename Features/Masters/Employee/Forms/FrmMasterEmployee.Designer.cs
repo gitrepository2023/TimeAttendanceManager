@@ -30,7 +30,7 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMasterEmployee));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.CmbUnitCode = new System.Windows.Forms.ComboBox();
             this.TxtEmpCode = new System.Windows.Forms.TextBox();
@@ -660,8 +660,8 @@
             this.DgvList.Name = "DgvList";
             this.DgvList.ReadOnly = true;
             this.DgvList.RowHeadersWidth = 51;
-            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.DarkBlue;
-            this.DgvList.RowsDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.DarkBlue;
+            this.DgvList.RowsDefaultCellStyle = dataGridViewCellStyle5;
             this.DgvList.Size = new System.Drawing.Size(309, 233);
             this.DgvList.TabIndex = 30;
             // 

@@ -56,6 +56,10 @@ namespace TimeAttendanceManager.Main.Classes
             {"3000", Properties.Settings.Default.ConnectionStringMDK}
         };
 
+        // Selected Employee Category
+        public static string pubSelectedEmpCategoryText { get; set; }
+        public static int? pubSelectedEmpCategoryId { get; set; }
+
         // UI settings
         public static bool pubShowConfirmation = false;
         public static int pubShowNotification = 30;
