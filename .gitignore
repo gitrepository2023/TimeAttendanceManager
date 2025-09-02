@@ -1,0 +1,62 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Oo]ut/
+
+# Documentation
+[Dd]ocs/
+
+# Ignore build outputs inside Setup Project
+SetupProject/SetupTimeAttendanceManager/[Bb]in/
+SetupProject/SetupTimeAttendanceManager/[Oo]bj/
+SetupProject/SetupTimeAttendanceManager/*.msi
+SetupProject/SetupTimeAttendanceManager/*.exe
+SetupProject/SetupTimeAttendanceManager/*.vdproj.user
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# NuGet
+packages/                  # Local NuGet packages folder
+*.nupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.nuget.props
+*.nuget.targets
+
+# If using PackageReference, this is auto-restored:
+*.deps.json
+
+# Publish profiles (recreate locally, don’t commit machine-specific ones)
+Properties/PublishProfiles/
+
+# ClickOnce / Installer junk
+*.application
+*.manifest
+*.pfx
+*.publishsettings
+
+# Optional: ignore test results
+TestResult.xml
+*.TestResults/
+[Tt]est[Rr]esult*/          # Covers VS test folders
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Others
+*.bak
+*.cache
+*.log
+*.tmp
+*.db
+*.opendb
+*.swp
