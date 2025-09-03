@@ -527,6 +527,193 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
         }
         #endregion
 
+        #region "TsBtnAddNew_Click"
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TsBtnAddNew_Click(object sender, EventArgs e)
+        {
+            ClearInputs();
+
+            TsLblInputStatus.Text = "Add all required information and click on Save.";
+            Application.DoEvents();
+        }
+
+        #endregion
+
+        #region "TsBtnSave_Click"
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void TsBtnSave_Click(System.Object sender, System.EventArgs e)
+        {
+            var startTime = DateTime.Now;  // Storing Start Time
+            var progress = new FrmAdminProgress();
+
+            try
+            {
+
+                // Call the ValidInput function and await its result
+                bool isValidInput = await ValidateInputAsync();
+                if (!isValidInput)
+                    return;
+
+                var msgResponse = MessageBox.Show("Are you sure you want to Save changes ?", "Save", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (msgResponse == DialogResult.No)
+                    return;
+
+                // Initialize progress form
+                progress.LblStatus.Text = "Saving Data.";
+                progress.LblMoreStatus.Text = "Please Wait...";
+                progress.ProgressBar1.Visible = false;
+                progress.Show();
+
+                // Update status label
+                TsLblInputStatus.Text = "Saving Data. Please wait...";
+                TsLblInputStatus.ForeColor = Color.DarkBlue;
+                Application.DoEvents();
+
+                if (await InsertRowsAsync())
+                {
+                    // Update was successful
+                    MessageBox.Show("Row inserted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    ClearInputs();
+
+                    // Calculate and display elapsed time
+                    var elapsedTime = DateTime.Now.Subtract(startTime);
+                    TsLblInputStatus.Text = $"Done In: {elapsedTime:hh\\:mm\\:ss}";
+                    TsLblInputStatus.ForeColor = Color.DarkBlue;
+                    Application.DoEvents();
+
+                }
+                else
+                    // Update failed
+                    MessageBox.Show("Failed to insert row.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Save", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                progress.Close();
+                progress.Dispose();
+            }
+        }
+
+        #endregion
+
+        #region "InsertRowsAsync"
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private async Task<bool> InsertRowsAsync()
+        {
+            try
+            {
+                UseWaitCursor = true;
+
+                const string tableName = "dbo.Master_Employees";
+                const string sqlProcedureName = "dbo.usp_Master_Employees_Upsert";
+
+                string defaultUnitCode = CmbUnitCode.Text;
+
+                string connectionString = ClassGlobalFunctions.GetConnectionStringByUnitCode(defaultUnitCode);
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException("Connection string cannot be empty");
+                }
+
+                var parameters = new List<SqlParameter>
+                {
+                    ClassDbHelpers.CreateSqlParameter("@UnitCode", SqlDbType.VarChar, myDataTable.UnitCode),
+                    ClassDbHelpers.CreateSqlParameter("@EmployeeCode", SqlDbType.NVarChar, myDataTable.EmployeeCode),
+                    ClassDbHelpers.CreateSqlParameter("@EmployeeName", SqlDbType.NVarChar, myDataTable.EmployeeName),
+                    ClassDbHelpers.CreateSqlParameter("@FathersName", SqlDbType.NVarChar, myDataTable.FathersName),
+                    ClassDbHelpers.CreateSqlParameter("@LastName", SqlDbType.NVarChar, myDataTable.LastName),
+                    ClassDbHelpers.CreateSqlParameter("@EmployeeDisplayName", SqlDbType.NVarChar, myDataTable.EmployeeDisplayName),
+                   
+                    ClassDbHelpers.CreateSqlParameter("@DateOfBirth", SqlDbType.Date, myDataTable.DateOfBirth),
+                    ClassDbHelpers.CreateSqlParameter("@DateOfJoining", SqlDbType.Date, myDataTable.DateOfJoining),
+                   
+                    ClassDbHelpers.CreateSqlParameter("@EmpGenderId", SqlDbType.Int, myDataTable.EmpGenderId),
+                    ClassDbHelpers.CreateSqlParameter("@EmployeeTypeId", SqlDbType.Int, myDataTable.EmployeeTypeId),
+                    ClassDbHelpers.CreateSqlParameter("@DutyLocationId", SqlDbType.Int, myDataTable.DutyLocationId),
+                    ClassDbHelpers.CreateSqlParameter("@DesignationId", SqlDbType.Int, myDataTable.DesignationId),
+                    ClassDbHelpers.CreateSqlParameter("@DepartmentId", SqlDbType.Int, myDataTable.DepartmentId),
+                    ClassDbHelpers.CreateSqlParameter("@JobCategoryId", SqlDbType.Int, myDataTable.JobCategoryId),
+                    ClassDbHelpers.CreateSqlParameter("@GradeCodeId", SqlDbType.Int, myDataTable.GradeCodeId),
+                    ClassDbHelpers.CreateSqlParameter("@BatchCodeId", SqlDbType.Int, myDataTable.BatchCodeId),
+                    ClassDbHelpers.CreateSqlParameter("@ContractorId", SqlDbType.Int, myDataTable.ContractorId),
+                    ClassDbHelpers.CreateSqlParameter("@CardColorId", SqlDbType.Int, myDataTable.CardColorId),
+                    ClassDbHelpers.CreateSqlParameter("@MaritalStatusId", SqlDbType.Int, myDataTable.MaritalStatusId),
+                    ClassDbHelpers.CreateSqlParameter("@WeeklyOffDayId", SqlDbType.Int, myDataTable.WeeklyOffDayId),
+                    ClassDbHelpers.CreateSqlParameter("@BloodGroupId", SqlDbType.Int, myDataTable.BloodGroupId),
+
+                    ClassDbHelpers.CreateSqlParameter("@ReportingManagerCode", SqlDbType.NVarChar, myDataTable.ReportingManagerCode),
+
+                    ClassDbHelpers.CreateSqlParameter("@RowVersion", SqlDbType.Int, myDataTable.RowVersion),
+                    ClassDbHelpers.CreateSqlParameter("@UserId", SqlDbType.Int, myDataTable.UserId),
+                    ClassDbHelpers.CreateSqlParameter("@UserRowGuid", SqlDbType.NVarChar, myDataTable.UserRowGuid.ToString()),
+                    ClassDbHelpers.CreateSqlParameter("@IpAddsCreated", SqlDbType.VarChar, myDataTable.IpAddsCreated),
+                    ClassDbHelpers.CreateSqlParameter("@HostName", SqlDbType.VarChar, myDataTable.HostName),
+                    ClassDbHelpers.CreateSqlParameter("@RowId", SqlDbType.Int, myDataTable.Id)
+                };
+
+                using (var connection = new SqlConnection(connectionString))
+                {
+                    await connection.OpenAsync().ConfigureAwait(false);
+
+                    using (var command = new SqlCommand(sqlProcedureName, connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.AddRange(parameters.ToArray());
+
+                        // Add output parameter for success status
+                        var successParam = new SqlParameter("@Success", SqlDbType.Bit)
+                        {
+                            Direction = ParameterDirection.Output
+                        };
+                        command.Parameters.Add(successParam);
+
+                        // Execute the command
+                        await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+                        bool success = Convert.ToBoolean(successParam.Value);
+
+                        UpdateStatusLabel("Done...");
+                        return success;
+                    }
+                }
+            }
+            catch (SqlException sqlEx)
+            {
+                string errorMessage = $"Database error {sqlEx.Number}: {sqlEx.Message}";
+                UpdateStatusLabel($"Database error: {sqlEx.Number}");
+                ShowErrorMessage(errorMessage, "Database error");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                UpdateStatusLabel(ex.Message);
+                ShowErrorMessage(ex.Message, "Upsert Rows");
+                return false;
+            }
+            finally
+            {
+                UseWaitCursor = false;
+            }
+        }
+        #endregion
+
         #region "ReadUserLoginDefaultXmlAsync"
         /// <summary>
         /// 
@@ -668,7 +855,7 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 TsLblInputStatus.Text = "...";
 
                 // set focus
-                CmbUnitCode.Focus();
+                TxtEmpName.Focus();
             }
             catch (Exception ex)
             {

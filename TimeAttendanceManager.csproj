@@ -218,6 +218,13 @@
       <DependentUpon>FrmContractorsUpdate.cs</DependentUpon>
     </Compile>
     <Compile Include="Contractors\Models\MasterContractor.cs" />
+    <Compile Include="Features\Masters\BatchCodes\Forms\FrmMMMasterBatchCodes.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Features\Masters\BatchCodes\Forms\FrmMMMasterBatchCodes.Designer.cs">
+      <DependentUpon>FrmMMMasterBatchCodes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Features\Masters\BatchCodes\Models\MasterBatchCode.cs" />
     <Compile Include="Features\Masters\Departments\Forms\FrmDepartmentEditForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -231,6 +238,13 @@
       <DependentUpon>FrmDepartmentList.cs</DependentUpon>
     </Compile>
     <Compile Include="Features\Masters\Departments\Models\Department.cs" />
+    <Compile Include="Features\Masters\Designations\Forms\FrmMasterDesignations.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Features\Masters\Designations\Forms\FrmMasterDesignations.Designer.cs">
+      <DependentUpon>FrmMasterDesignations.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Features\Masters\Designations\Model\MasterDesignation.cs" />
     <Compile Include="Features\Masters\Employee\Classes\EmployeeMasterFilter.cs" />
     <Compile Include="Features\Masters\Employee\Classes\StringListEditor.cs" />
     <Compile Include="Features\Masters\Employee\Classes\UnitCodeListConverter.cs" />
@@ -332,11 +346,17 @@
     <EmbeddedResource Include="Contractors\Forms\FrmContractorsUpdate.resx">
       <DependentUpon>FrmContractorsUpdate.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Features\Masters\BatchCodes\Forms\FrmMMMasterBatchCodes.resx">
+      <DependentUpon>FrmMMMasterBatchCodes.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Features\Masters\Departments\Forms\FrmDepartmentEditForm.resx">
       <DependentUpon>FrmDepartmentEditForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Features\Masters\Departments\Forms\FrmDepartmentList.resx">
       <DependentUpon>FrmDepartmentList.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Features\Masters\Designations\Forms\FrmMasterDesignations.resx">
+      <DependentUpon>FrmMasterDesignations.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Features\Masters\Employee\Forms\FrmMasterEmployee.resx">
       <DependentUpon>FrmMasterEmployee.cs</DependentUpon>

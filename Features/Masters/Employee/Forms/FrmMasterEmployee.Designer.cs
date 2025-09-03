@@ -30,7 +30,7 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMasterEmployee));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.CmbUnitCode = new System.Windows.Forms.ComboBox();
             this.TxtEmpCode = new System.Windows.Forms.TextBox();
@@ -660,8 +660,8 @@
             this.DgvList.Name = "DgvList";
             this.DgvList.ReadOnly = true;
             this.DgvList.RowHeadersWidth = 51;
-            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.DarkBlue;
-            this.DgvList.RowsDefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.DarkBlue;
+            this.DgvList.RowsDefaultCellStyle = dataGridViewCellStyle1;
             this.DgvList.Size = new System.Drawing.Size(309, 233);
             this.DgvList.TabIndex = 30;
             // 
@@ -1028,10 +1028,10 @@
             // TbPgEmp
             // 
             this.TbPgEmp.Controls.Add(this.TableLayout2);
-            this.TbPgEmp.Location = new System.Drawing.Point(4, 29);
+            this.TbPgEmp.Location = new System.Drawing.Point(4, 25);
             this.TbPgEmp.Name = "TbPgEmp";
             this.TbPgEmp.Padding = new System.Windows.Forms.Padding(3);
-            this.TbPgEmp.Size = new System.Drawing.Size(451, 442);
+            this.TbPgEmp.Size = new System.Drawing.Size(451, 446);
             this.TbPgEmp.TabIndex = 1;
             this.TbPgEmp.Text = "Employment Details";
             this.TbPgEmp.UseVisualStyleBackColor = true;
@@ -1088,7 +1088,7 @@
             this.TableLayout2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.TableLayout2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.TableLayout2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-            this.TableLayout2.Size = new System.Drawing.Size(445, 436);
+            this.TableLayout2.Size = new System.Drawing.Size(445, 440);
             this.TableLayout2.TabIndex = 1;
             // 
             // label21

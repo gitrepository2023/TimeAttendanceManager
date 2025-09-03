@@ -130,11 +130,25 @@ namespace TimeAttendanceManager.Helpers.Classes
             sb.AppendLine("  <header><h1>" + HttpUtility.HtmlEncode(title) + "</h1></header>");
             sb.AppendLine("  <div class=\"toolbar\">");
             sb.AppendLine("    <input id=\"globalSearch\" type=\"search\" placeholder=\"Search...\" />");
+
+            //sb.AppendLine("    <div class=\"select\"><label for=\"pageSize\" class=\"muted\">Rows per page:</label>");
+            //sb.AppendLine("      <select id=\"pageSize\">");
+            //sb.AppendLine("        <option>10</option><option selected>25</option><option>50</option><option>100</option><option>500</option>");
+            //sb.AppendLine("      </select>");
+            //sb.AppendLine("    </div>");
+
             sb.AppendLine("    <div class=\"select\"><label for=\"pageSize\" class=\"muted\">Rows per page:</label>");
             sb.AppendLine("      <select id=\"pageSize\">");
-            sb.AppendLine("        <option>10</option><option selected>25</option><option>50</option><option>100</option><option>500</option>");
+            sb.AppendLine("        <option>10</option>");
+            sb.AppendLine("        <option selected>25</option>");
+            sb.AppendLine("        <option>50</option>");
+            sb.AppendLine("        <option>100</option>");
+            sb.AppendLine("        <option>500</option>");
+            sb.AppendLine("        <option value=\"0\">(All)</option>"); 
             sb.AppendLine("      </select>");
             sb.AppendLine("    </div>");
+
+
             sb.AppendLine("    <div class=\"muted count\" id=\"countInfo\"></div>");
             sb.AppendLine("  </div>");
 
@@ -142,15 +156,6 @@ namespace TimeAttendanceManager.Helpers.Classes
             sb.AppendLine("    <div class=\"responsive\">");
             sb.AppendLine("      <table id=\"dataTable\">");
             sb.AppendLine("        <thead><tr>");
-
-            // Render headers with data-type hints
-            //foreach (DataColumn col in table.Columns)
-            //{
-            //    string dataType = GetTypeHint(col.DataType);
-            //    sb.Append($"<th data-type=\"{dataType}\">{HttpUtility.HtmlEncode(col.ColumnName)}<span class=\"sort-indicator\"></span></th>");
-            //}
-            //sb.AppendLine("</tr></thead>");
-            //sb.AppendLine("<tbody>");
 
             // Render headers with custom dictionary if available
             foreach (DataColumn col in table.Columns)
@@ -258,17 +263,30 @@ namespace TimeAttendanceManager.Helpers.Classes
                 // Pagination
                 pageSize = parseInt(pageSizeSel.value,10);
                 const total = filtered.length;
-                const pages = Math.max(1, Math.ceil(total / pageSize));
-                page = Math.min(Math.max(1, page), pages);
-                const start = (page-1)*pageSize;
-                const end = start + pageSize;
+                let pages, start, end;
+
+                if (pageSize === 0) {
+                  // Show all rows
+                  pages = 1;
+                  page = 1;
+                  start = 0;
+                  end = total;
+                } else {
+                  pages = Math.max(1, Math.ceil(total / pageSize));
+                  page = Math.min(Math.max(1, page), pages);
+                  start = (page-1) * pageSize;
+                  end = start + pageSize;
+                }
 
                 // Update DOM
                 tbody.innerHTML = '';
-                filtered.slice(start, end).forEach(r=>tbody.appendChild(r));
-                prevBtn.disabled = (page === 1);
-                nextBtn.disabled = (page === pages);
-                pageInfo.textContent = `Page ${page} / ${pages}`;
+                filtered.slice(start, end).forEach(r => tbody.appendChild(r));
+
+                prevBtn.disabled = (page === 1 || pageSize === 0);
+                nextBtn.disabled = (page === pages || pageSize === 0);
+                pageInfo.textContent = (pageSize === 0)
+                  ? `All rows`
+                  : `Page ${page} / ${pages}`;
                 countInfo.textContent = `${total} row(s)`;
               }
 
