@@ -30,7 +30,7 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMasterDesignations));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
             this.ImageListTabCtrl = new System.Windows.Forms.ImageList(this.components);
@@ -43,16 +43,19 @@
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.TsBtnSidePanel = new FontAwesome.Sharp.IconToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.TsBtnAddNew = new FontAwesome.Sharp.IconToolStripButton();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.TsBtnSave = new FontAwesome.Sharp.IconToolStripButton();
             this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
+            this.TsBtnPaste = new FontAwesome.Sharp.IconToolStripButton();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.TsBtnOptions = new FontAwesome.Sharp.IconDropDownButton();
             this.TsBtnOptTech = new System.Windows.Forms.ToolStripMenuItem();
             this.TsMenuViewInActive = new System.Windows.Forms.ToolStripMenuItem();
             this.TsMenuViewDeleted = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.TsBtnCloseForm = new FontAwesome.Sharp.IconToolStripButton();
             this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
+            this.TsBtnCloseForm = new FontAwesome.Sharp.IconToolStripButton();
+            this.toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
             this.TsBtnHelp = new FontAwesome.Sharp.IconToolStripButton();
             this.SplitMain = new System.Windows.Forms.SplitContainer();
             this.DgvList = new System.Windows.Forms.DataGridView();
@@ -78,7 +81,6 @@
             this.ToolStrip4 = new System.Windows.Forms.ToolStrip();
             this.IconToolStripButton2 = new FontAwesome.Sharp.IconToolStripButton();
             this.TsBtnFilterClose = new FontAwesome.Sharp.IconToolStripButton();
-            this.TsBtnAddNew = new FontAwesome.Sharp.IconToolStripButton();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
             this.ToolStripCaption.SuspendLayout();
             this.StripInputFooter.SuspendLayout();
@@ -183,10 +185,12 @@
             this.toolStripSeparator4,
             this.TsBtnSave,
             this.toolStripSeparator7,
-            this.TsBtnOptions,
+            this.TsBtnPaste,
             this.toolStripSeparator2,
-            this.TsBtnCloseForm,
+            this.TsBtnOptions,
             this.toolStripSeparator8,
+            this.TsBtnCloseForm,
+            this.toolStripSeparator10,
             this.TsBtnHelp});
             this.toolStrip1.Location = new System.Drawing.Point(0, 31);
             this.toolStrip1.Name = "toolStrip1";
@@ -213,6 +217,20 @@
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(6, 31);
             // 
+            // TsBtnAddNew
+            // 
+            this.TsBtnAddNew.ForeColor = System.Drawing.Color.Blue;
+            this.TsBtnAddNew.IconChar = FontAwesome.Sharp.IconChar.PenAlt;
+            this.TsBtnAddNew.IconColor = System.Drawing.Color.Blue;
+            this.TsBtnAddNew.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.TsBtnAddNew.IconSize = 24;
+            this.TsBtnAddNew.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.TsBtnAddNew.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.TsBtnAddNew.Name = "TsBtnAddNew";
+            this.TsBtnAddNew.Size = new System.Drawing.Size(84, 28);
+            this.TsBtnAddNew.Text = "Add New";
+            this.TsBtnAddNew.ToolTipText = "Add New row";
+            // 
             // toolStripSeparator4
             // 
             this.toolStripSeparator4.Name = "toolStripSeparator4";
@@ -237,6 +255,25 @@
             // 
             this.toolStripSeparator7.Name = "toolStripSeparator7";
             this.toolStripSeparator7.Size = new System.Drawing.Size(6, 31);
+            // 
+            // TsBtnPaste
+            // 
+            this.TsBtnPaste.ForeColor = System.Drawing.Color.Olive;
+            this.TsBtnPaste.IconChar = FontAwesome.Sharp.IconChar.FileExcel;
+            this.TsBtnPaste.IconColor = System.Drawing.Color.IndianRed;
+            this.TsBtnPaste.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.TsBtnPaste.IconSize = 24;
+            this.TsBtnPaste.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.TsBtnPaste.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.TsBtnPaste.Name = "TsBtnPaste";
+            this.TsBtnPaste.Size = new System.Drawing.Size(123, 28);
+            this.TsBtnPaste.Text = "Paste From Excel";
+            this.TsBtnPaste.ToolTipText = "Paste Rows From Excel";
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 31);
             // 
             // TsBtnOptions
             // 
@@ -274,10 +311,10 @@
             this.TsMenuViewDeleted.Size = new System.Drawing.Size(162, 22);
             this.TsMenuViewDeleted.Text = "View Deleted";
             // 
-            // toolStripSeparator2
+            // toolStripSeparator8
             // 
-            this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 31);
+            this.toolStripSeparator8.Name = "toolStripSeparator8";
+            this.toolStripSeparator8.Size = new System.Drawing.Size(6, 31);
             // 
             // TsBtnCloseForm
             // 
@@ -291,10 +328,10 @@
             this.TsBtnCloseForm.Size = new System.Drawing.Size(95, 28);
             this.TsBtnCloseForm.Text = "Close Form";
             // 
-            // toolStripSeparator8
+            // toolStripSeparator10
             // 
-            this.toolStripSeparator8.Name = "toolStripSeparator8";
-            this.toolStripSeparator8.Size = new System.Drawing.Size(6, 31);
+            this.toolStripSeparator10.Name = "toolStripSeparator10";
+            this.toolStripSeparator10.Size = new System.Drawing.Size(6, 31);
             // 
             // TsBtnHelp
             // 
@@ -342,8 +379,8 @@
             this.DgvList.Name = "DgvList";
             this.DgvList.ReadOnly = true;
             this.DgvList.RowHeadersWidth = 51;
-            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.DarkBlue;
-            this.DgvList.RowsDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.DarkBlue;
+            this.DgvList.RowsDefaultCellStyle = dataGridViewCellStyle1;
             this.DgvList.Size = new System.Drawing.Size(598, 444);
             this.DgvList.TabIndex = 31;
             // 
@@ -561,7 +598,7 @@
             this.tabPageTips.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.tabPageTips.Name = "tabPageTips";
             this.tabPageTips.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.tabPageTips.Size = new System.Drawing.Size(170, 323);
+            this.tabPageTips.Size = new System.Drawing.Size(170, 423);
             this.tabPageTips.TabIndex = 1;
             this.tabPageTips.Text = "Tips";
             this.tabPageTips.UseVisualStyleBackColor = true;
@@ -573,7 +610,7 @@
             this.txtHelp.Location = new System.Drawing.Point(3, 4);
             this.txtHelp.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.txtHelp.Name = "txtHelp";
-            this.txtHelp.Size = new System.Drawing.Size(164, 315);
+            this.txtHelp.Size = new System.Drawing.Size(164, 415);
             this.txtHelp.TabIndex = 1;
             this.txtHelp.Text = "";
             // 
@@ -615,20 +652,6 @@
             this.TsBtnFilterClose.Size = new System.Drawing.Size(23, 22);
             this.TsBtnFilterClose.Text = "Close";
             // 
-            // TsBtnAddNew
-            // 
-            this.TsBtnAddNew.ForeColor = System.Drawing.Color.Blue;
-            this.TsBtnAddNew.IconChar = FontAwesome.Sharp.IconChar.PenAlt;
-            this.TsBtnAddNew.IconColor = System.Drawing.Color.Blue;
-            this.TsBtnAddNew.IconFont = FontAwesome.Sharp.IconFont.Auto;
-            this.TsBtnAddNew.IconSize = 24;
-            this.TsBtnAddNew.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
-            this.TsBtnAddNew.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.TsBtnAddNew.Name = "TsBtnAddNew";
-            this.TsBtnAddNew.Size = new System.Drawing.Size(84, 28);
-            this.TsBtnAddNew.Text = "Add New";
-            this.TsBtnAddNew.ToolTipText = "Add New row";
-            // 
             // FrmMasterDesignations
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
@@ -640,9 +663,10 @@
             this.Controls.Add(this.StripInputFooter);
             this.Controls.Add(this.ToolStripCaption);
             this.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "FrmMasterDesignations";
             this.ShowIcon = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Set Employee Designations";
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).EndInit();
             this.ToolStripCaption.ResumeLayout(false);
@@ -720,5 +744,7 @@
         internal FontAwesome.Sharp.IconToolStripButton IconToolStripButton2;
         internal FontAwesome.Sharp.IconToolStripButton TsBtnFilterClose;
         private FontAwesome.Sharp.IconToolStripButton TsBtnAddNew;
+        private FontAwesome.Sharp.IconToolStripButton TsBtnPaste;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator10;
     }
 }

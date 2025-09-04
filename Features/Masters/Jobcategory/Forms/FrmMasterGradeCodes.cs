@@ -11,17 +11,17 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TimeAttendanceManager.Auth.Classes;
-using TimeAttendanceManager.Features.Masters.Designations.Model;
+using TimeAttendanceManager.Features.Masters.Jobcategory.Models;
 using TimeAttendanceManager.Helpers.Classes;
 using TimeAttendanceManager.Main.Classes;
 using TimeAttendanceManager.Main.Forms;
 
-namespace TimeAttendanceManager.Features.Masters.Designations.Forms
+namespace TimeAttendanceManager.Features.Masters.Jobcategory.Forms
 {
-    public partial class FrmMasterDesignations : Form
+    public partial class FrmMasterGradeCodes : Form
     {
         #region "Constructor"
-        public FrmMasterDesignations()
+        public FrmMasterGradeCodes()
         {
             InitializeComponent();
 
@@ -89,7 +89,7 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
         #endregion
 
         #region "LocalVariables"
-        private MasterDesignation myDataTable = new MasterDesignation();
+        private MasterGradeCode myDataTable = new MasterGradeCode();
         private DataTable _sqlTable = new DataTable();
         private ContextMenuStrip _cmsDgvList;
         bool? isActiveRows = true;
@@ -277,18 +277,18 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine("MANAGE DESIGNATIONS");
+            sb.AppendLine("MANAGE JOB GRADES");
             sb.AppendLine();
-            sb.AppendLine("Follow these steps to add or update DESIGNATIONS:");
+            sb.AppendLine("Follow these steps to add or update JOB CATEGORIES:");
             sb.AppendLine();
 
             // 1. BASIC DATA
-            sb.AppendLine("1. ADDING NEW DESIGNATION");
+            sb.AppendLine("1. ADDING NEW JOB GRADE");
             sb.AppendLine("   - Select your Plant Code from the dropdown list.");
             sb.AppendLine("   - Click the [Add New] button to insert a new row in the grid.");
             sb.AppendLine("   - Enter the required details:");
-            sb.AppendLine("     • Designation Code (unique per Plant)");
-            sb.AppendLine("     • Designation Name (description of the Designation)");
+            sb.AppendLine("     • Grade Code (unique per Plant)");
+            sb.AppendLine("     • Grade Name (description of the Category)");
             sb.AppendLine("   - 'Is Active' will be checked by default for new batches.");
             sb.AppendLine();
 
@@ -297,27 +297,27 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
             sb.AppendLine("   - After adding or editing rows in the grid, click the [Save] button.");
             sb.AppendLine("   - The system will validate entries for:");
             sb.AppendLine("     • Required fields (Code and Name must not be blank)");
-            sb.AppendLine("     • Duplicate Designation Code per Plant.");
+            sb.AppendLine("     • Duplicate Category Code per Plant.");
             sb.AppendLine("   - If validation passes, changes will be saved to the database.");
             sb.AppendLine("   - A confirmation message will appear after successful save.");
             sb.AppendLine();
 
             // 3. UPDATING EXISTING ROWS
-            sb.AppendLine("3. UPDATING EXISTING DESIGNATIONS");
-            sb.AppendLine("   - Edit the Designation Code or Designation Name directly in the grid.");
+            sb.AppendLine("3. UPDATING EXISTING JOB GRADES");
+            sb.AppendLine("   - Edit the Category Code or Category Name directly in the grid.");
             sb.AppendLine("   - Click the [Save] button to commit the changes.");
             sb.AppendLine("   - The system will update only the modified rows.");
             sb.AppendLine();
 
             // 4. DEACTIVATING A BATCH
-            sb.AppendLine("4. DEACTIVATE A DESIGNATIONS");
+            sb.AppendLine("4. DEACTIVATE A JOB GRADES");
             sb.AppendLine("   - To make a batch inactive, uncheck the 'Is Active' column in the grid.");
             sb.AppendLine("   - Click [Save] to apply changes.");
-            sb.AppendLine("   - Inactive Designation will remain in the system but cannot be used in transactions.");
+            sb.AppendLine("   - Inactive Category will remain in the system but cannot be used in transactions.");
             sb.AppendLine();
 
             // 5. VIEWING AND FILTERING
-            sb.AppendLine("5. VIEW AND FILTER DESIGNATIONS");
+            sb.AppendLine("5. VIEW AND FILTER JOB GRADES");
             sb.AppendLine("   - Use the search box to filter by Code or Name.");
             sb.AppendLine("   - Change 'Rows per page' to adjust how many rows are displayed.");
             sb.AppendLine("   - Use column headers to sort ascending or descending.");
@@ -332,8 +332,8 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
 
             // 7. TROUBLESHOOTING
             sb.AppendLine("7. TROUBLESHOOTING");
-            sb.AppendLine("   - If Save fails: Ensure Plant Code, Desgination Code, and Desgination Name are filled in.");
-            sb.AppendLine("   - If duplicate error: Desgination Code must be unique within the same Plant.");
+            sb.AppendLine("   - If Save fails: Ensure Plant Code, Code, and Name are filled in.");
+            sb.AppendLine("   - If duplicate error: Code must be unique within the same Plant.");
             sb.AppendLine("   - Contact the system administrator if problems persist.");
             sb.AppendLine();
 
@@ -384,14 +384,14 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
 
                     // Set default "created" date (VB had FormatDateTime("09-MAY-25", ShortDate))
                     // Here we parse explicitly as dd-MMM-yy using invariant culture.
-                    FormCreated = DateTime.ParseExact("03-Sep-2025", "dd-MMM-yyyy", CultureInfo.InvariantCulture)
+                    FormCreated = DateTime.ParseExact("04-Sep-2025", "dd-MMM-yyyy", CultureInfo.InvariantCulture)
                 };
 
                 // Add table names used in this form (9 fields as in your VB)
                 mTechDetails.TableNames.Add(new TableNames(
-                    "dbo.Master_Designations",
-                    "dbo.usp_Master_Designations_Insert",
-                    "dbo.usp_Master_Designations_Update",
+                    "dbo.Master_GradeCodes",
+                    "dbo.usp_Master_JobCategories_Insert",
+                    "dbo.usp_Master_JobCategories_Update",
                     "",
                     "",
                     "",
@@ -630,7 +630,7 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
                 // Get rows
                 DataTable resultTable = await ClassDbHelpers.GetRowsFromTableAsync(
                     unitCode: defaultUnitCode,
-                    tableName: "Master_Designations",
+                    tableName: "Master_GradeCodes",
                     selectedColumns: null,
                     serachColumns: searchColumns,
                     additionalParameters: parameters,
@@ -672,8 +672,8 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
 
                 // Set nice headers
                 DgvList.Columns["UnitCode"].HeaderText = "Plant";
-                DgvList.Columns["Code"].HeaderText = "Desgination Code";
-                DgvList.Columns["Name"].HeaderText = "Desgination Name";
+                DgvList.Columns["Code"].HeaderText = "Code";
+                DgvList.Columns["Name"].HeaderText = "Name";
                 DgvList.Columns["CodeLevel"].HeaderText = "Code Level";
                 DgvList.Columns["IsActive"].HeaderText = "Is Active";
 
@@ -1007,7 +1007,7 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
             }));
 
             // Build table schema if needed
-            _sqlTable = new DataTable("Designations");
+            _sqlTable = new DataTable("Grades");
 
             var colId = _sqlTable.Columns.Add("Id", typeof(int));
             colId.AllowDBNull = true;
@@ -1190,7 +1190,7 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
 
                 if (insertTable != null && insertTable.Rows.Count > 0)
                 {
-                    if (await UpsertRowsAsync("dbo.usp_Master_Designations_Insert", insertTable))
+                    if (await UpsertRowsAsync("dbo.usp_Master_GradeCodes_Insert", insertTable))
                     {
                         // Insert was successful
                         hasChanges = true;
@@ -1204,7 +1204,7 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
                     var changed = updateTable.GetChanges(DataRowState.Modified);
                     if (changed != null && changed.Rows.Count > 0)
                     {
-                        if (await UpsertRowsAsync("dbo.usp_Master_Designations_Update", changed))
+                        if (await UpsertRowsAsync("dbo.usp_Master_GradeCodes_Update", changed))
                         {
                             hasChanges = true;
                             MessageBox.Show("Row updated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1305,7 +1305,7 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
             {
                 UseWaitCursor = true;
 
-                const string tableName = "dbo.Master_Designations";
+                const string tableName = "dbo.Master_GradeCodes";
 
                 string defaultUnitCode;
                 if (TsBtnDrpUnitCode == null || string.IsNullOrWhiteSpace(TsBtnDrpUnitCode.Text) ||
@@ -1344,7 +1344,7 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
                         // Add table-valued parameter
                         var tvpParam = command.Parameters.AddWithValue("@TableType", changes);
                         tvpParam.SqlDbType = SqlDbType.Structured;
-                        tvpParam.TypeName = "dbo.UDT_Master_Designations";
+                        tvpParam.TypeName = "dbo.UDT_Master_GradeCodes";
 
                         // Add output parameter for success status
                         var successParam = new SqlParameter("@Success", SqlDbType.Bit)
@@ -1431,7 +1431,7 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
                 }
 
                 // Populate data table
-                myDataTable = new MasterDesignation();
+                myDataTable = new MasterGradeCode();
 
                 TsLblInputStatus.ForeColor = System.Drawing.Color.DarkBlue;
                 TsLblInputStatus.Text = "Done...";
@@ -1739,7 +1739,7 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
                     int.TryParse(TsCmbLimitRows.Text, out var value) ? value : 50;
 
                 string orderBy = "UnitCode, CodeLevel, Code, Name";
-                string mTableName = "Master_Designations";
+                string mTableName = "Master_GradeCodes";
 
                 // Get data asynchronously
                 DataTable resultTable = await ClassDbHelpers.GetRowsFromTableAsync(
@@ -1797,17 +1797,17 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
                 var customHeaders = new Dictionary<string, string>
                     {
                         {"UnitCode", "Plant"},
-                        {"Code", "Designation Code"},
-                        {"Name", "Designation Name"}
+                        {"Code", "Code"},
+                        {"Name", "Name"}
                     };
 
                 var folderPath = ClassLayoutHelper.GetReportFolderPath("MasterData");
-                var file = Path.Combine(folderPath, "DesignationsList.html");
+                var file = Path.Combine(folderPath, "JobGrades.html");
 
                 HtmlExportHelper.ExportDataTableToHtml(
                     table: filteredTable,
                     filePath: file,
-                    title: "Master Designation Codes",
+                    title: "Master Job Categorires Codes",
                     dateFormat: "dd-MMM-yyyy",
                     customHeaders: customHeaders);
 
@@ -1830,6 +1830,7 @@ namespace TimeAttendanceManager.Features.Masters.Designations.Forms
         }
 
         #endregion
+
 
     }
 }

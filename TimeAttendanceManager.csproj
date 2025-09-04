@@ -255,6 +255,20 @@
       <DependentUpon>FrmMasterEmployee.cs</DependentUpon>
     </Compile>
     <Compile Include="Features\Masters\Employee\Models\MasterEmployee.cs" />
+    <Compile Include="Features\Masters\Jobcategory\Forms\FrmMasterGradeCodes.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Features\Masters\Jobcategory\Forms\FrmMasterGradeCodes.Designer.cs">
+      <DependentUpon>FrmMasterGradeCodes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Features\Masters\Jobcategory\Forms\FrmMasterJobCategories.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Features\Masters\Jobcategory\Forms\FrmMasterJobCategories.Designer.cs">
+      <DependentUpon>FrmMasterJobCategories.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Features\Masters\Jobcategory\Models\MasterGradeCode.cs" />
+    <Compile Include="Features\Masters\Jobcategory\Models\MasterJobCategorie.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -360,6 +374,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Features\Masters\Employee\Forms\FrmMasterEmployee.resx">
       <DependentUpon>FrmMasterEmployee.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Features\Masters\Jobcategory\Forms\FrmMasterGradeCodes.resx">
+      <DependentUpon>FrmMasterGradeCodes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Features\Masters\Jobcategory\Forms\FrmMasterJobCategories.resx">
+      <DependentUpon>FrmMasterJobCategories.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Main\Forms\FrmAboutDialog.resx">
       <DependentUpon>FrmAboutDialog.cs</DependentUpon>

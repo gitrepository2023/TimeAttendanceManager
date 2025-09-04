@@ -71,7 +71,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsBtnClose});
             this.ToolStripCaption.Location = new System.Drawing.Point(0, 0);
             this.ToolStripCaption.Name = "ToolStripCaption";
-            this.ToolStripCaption.Size = new System.Drawing.Size(584, 31);
+            this.ToolStripCaption.Size = new System.Drawing.Size(784, 31);
             this.ToolStripCaption.TabIndex = 3;
             this.ToolStripCaption.Text = "toolStrip1";
             // 
@@ -106,7 +106,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsLblDgvListFooter});
             this.statusStrip2.Location = new System.Drawing.Point(0, 439);
             this.statusStrip2.Name = "statusStrip2";
-            this.statusStrip2.Size = new System.Drawing.Size(584, 22);
+            this.statusStrip2.Size = new System.Drawing.Size(784, 22);
             this.statusStrip2.TabIndex = 33;
             this.statusStrip2.Text = "statusStrip2";
             // 
@@ -135,7 +135,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsCmbLimitRows});
             this.ToolStripShiftSchedule.Location = new System.Drawing.Point(0, 31);
             this.ToolStripShiftSchedule.Name = "ToolStripShiftSchedule";
-            this.ToolStripShiftSchedule.Size = new System.Drawing.Size(584, 25);
+            this.ToolStripShiftSchedule.Size = new System.Drawing.Size(784, 25);
             this.ToolStripShiftSchedule.TabIndex = 34;
             this.ToolStripShiftSchedule.Text = "ToolStrip1";
             // 
@@ -273,7 +273,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.DgvList.Dock = System.Windows.Forms.DockStyle.Fill;
             this.DgvList.Location = new System.Drawing.Point(0, 56);
             this.DgvList.Name = "DgvList";
-            this.DgvList.Size = new System.Drawing.Size(584, 383);
+            this.DgvList.Size = new System.Drawing.Size(784, 383);
             this.DgvList.TabIndex = 35;
             // 
             // FrmModalFormNames
@@ -281,7 +281,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.ClientSize = new System.Drawing.Size(584, 461);
+            this.ClientSize = new System.Drawing.Size(784, 461);
             this.Controls.Add(this.DgvList);
             this.Controls.Add(this.ToolStripShiftSchedule);
             this.Controls.Add(this.statusStrip2);
