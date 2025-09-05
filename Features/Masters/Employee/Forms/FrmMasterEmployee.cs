@@ -37,6 +37,8 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
             this.TsBtnOptTech.Click -= TsBtnOptTech_Click;
             this.TsBtnOptClose.Click += TsBtnOptClose_Click;
             this.TsBtnFilterClose.Click -= TsBtnFilterClose_Click;
+            this.TsMenuViewInActive.Click -= TsMenuViewInActive_Click;
+            this.TsMenuViewDeleted.Click -= TsMenuViewDeleted_Click;
 
             // Add events
             this.Load += Form_Load;
@@ -49,6 +51,8 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
             this.TsBtnOptTech.Click += TsBtnOptTech_Click;
             this.TsBtnOptClose.Click += TsBtnOptClose_Click;
             this.TsBtnFilterClose.Click += TsBtnFilterClose_Click;
+            this.TsMenuViewInActive.Click += TsMenuViewInActive_Click;
+            this.TsMenuViewDeleted.Click += TsMenuViewDeleted_Click;
 
 
         }
@@ -58,6 +62,8 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
         private EmployeeMasterFilter mFilter = new EmployeeMasterFilter();
         private MasterEmployee myDataTable = new MasterEmployee();
         private bool _isFillingMenuGroup; // optional reentrancy guard
+        bool? isActiveRows = true;
+        bool? isDeletedRows = false;
         #endregion
 
         #region "MyBase_Load"
@@ -299,7 +305,7 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 }
                 CmbEmploymentType.Enabled = false;// disable to prevent changes
 
-                await ClassGlobalFunctions.FillComboBoxAsync("GenderCode", "Id", CmbEmpBloodGroup, "Master_Genders", ClassGlobalVariables.pubUnitCode);
+                await ClassGlobalFunctions.FillComboBoxAsync("CodeAndName", "Id", CmbEmpGender, "v_Master_Genders", ClassGlobalVariables.pubUnitCode);
                 await ClassGlobalFunctions.FillComboBoxAsync("MaritalStatus", "Id", CmbEmpMaritalStatus, "Master_MaritalStatus", ClassGlobalVariables.pubUnitCode);
                 await ClassGlobalFunctions.FillComboBoxAsync("Name", "Id", CmbEmpBloodGroup, "Master_BloodGroups", ClassGlobalVariables.pubUnitCode);
                 await ClassGlobalFunctions.FillComboBoxAsync("FullName", "Id", CmbWeekNames, "Master_WeekNames", ClassGlobalVariables.pubUnitCode);
@@ -354,10 +360,10 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
 
                 // Duty Location
                 await ClassGlobalFunctions.FillComboForUnitCodeAsync(
-                    "Name",
+                    "CodeAndName",
                     "Id",
                     CmbDutyLocation,
-                    "Master_DutyLocations",
+                    "v_Master_DutyLocations",
                     mUnitCode);
 
                 // Department
@@ -378,10 +384,10 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
 
                 // Job Category
                 await ClassGlobalFunctions.FillComboForUnitCodeAsync(
-                    "Name",
+                    "CodeAndName",
                     "Id",
                     CmbJobCatg,
-                    "Master_JobCategories",
+                    "v_Master_JobCategories",
                     mUnitCode);
 
                 // Job Grade
@@ -527,6 +533,382 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
         }
         #endregion
 
+        #region "TsMenuViewInActive_Click"
+        private void TsMenuViewInActive_Click(object sender, EventArgs e)
+        {
+            isActiveRows = !TsMenuViewInActive.Checked;
+        }
+        #endregion
+
+        #region "TsMenuViewDeleted_Click"
+        private void TsMenuViewDeleted_Click(object sender, EventArgs e)
+        {
+            isDeletedRows = TsMenuViewDeleted.Checked;
+        }
+        #endregion
+
+        #region "TsBtRefreshDgv_Click"
+        private async void TsBtRefreshDgv_Click(System.Object sender, System.EventArgs e)
+        {
+            // clear search box if coming from Clear button
+            if (sender == TsBtnClearSearchDgv)
+                TsTxtSearchDgv.Text = null;
+
+            await LoadDataGridViewAsync();
+
+        }
+        #endregion
+
+        #region "TsTxtSearchDgv_KeyDown"
+        private void TsTxtSearchDgv_KeyDown(object sender, System.Windows.Forms.KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Return)
+
+                // Update DataGridView
+                TsBtRefreshDgv_Click(null, null);
+        }
+
+        #endregion
+
+        #region "TsBtnDrpBtn_DropDownItemClicked"
+        private async void TsBtnDrpBtn_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            try
+            {
+                var dropDown = (ToolStripDropDownButton)sender;
+                if (dropDown.DropDownItems.Count == 0) return;
+
+                // Update check states for all menu items
+                foreach (ToolStripItem item in dropDown.DropDownItems)
+                {
+                    if (item is ToolStripMenuItem menuItem)
+                    {
+                        menuItem.Checked = (item == e.ClickedItem);
+                    }
+                }
+
+                // Update displayed text
+                dropDown.Text = e.ClickedItem.Text;
+                // Update Tag of the button to match the clicked item’s Tag
+                dropDown.Tag = e.ClickedItem.Tag;
+
+                // Load DataGridView
+                await LoadDataGridViewAsync();
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message,
+                    "TsBtnDrpEmpCatg_DropDownItemClicked",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+        #endregion
+
+        #region "LoadDataGridViewAsync"
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private async Task LoadDataGridViewAsync()
+        {
+            var startTime = DateTime.Now;  // Storing Start Time
+            var progress = new FrmAdminProgress();
+
+            try
+            {
+                // Initialize progress form
+                progress.LblStatus.Text = "Updating List.";
+                progress.LblMoreStatus.Text = "Please Wait...";
+                progress.ProgressBar1.Visible = false;
+                progress.Show();
+
+                // Update status label
+                TsLblDgvListFooter.Text = "Fetching Rows. Please wait...";
+                TsLblDgvListFooter.ForeColor = Color.DarkBlue;
+                Application.DoEvents();
+
+                // Prepare DataGridView
+                DgvList.Invoke((MethodInvoker)(() =>
+                {
+                    DgvList.DataSource = null;
+                    DgvList.Rows.Clear();
+                    DgvList.Columns.Clear();
+                    DgvList.Refresh();
+                    DgvList.Visible = false;
+                }));
+
+                var invalidOptions = new[] { "(All)", "Plant Code" };
+                if (TsBtnDrpUnitCode == null ||
+                    string.IsNullOrWhiteSpace(TsBtnDrpUnitCode.Text) ||
+                    invalidOptions.Contains(TsBtnDrpUnitCode.Text, StringComparer.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("Please Select Plant Code from drop down.");
+                }
+                string defaultUnitCode = TsBtnDrpUnitCode.Text;
+
+
+                string connectionString = ClassGlobalFunctions.GetConnectionStringByUnitCode(
+                        defaultUnitCode ?? ClassGlobalVariables.pubUnitCode);
+
+                if (string.IsNullOrWhiteSpace(connectionString))
+                    throw new InvalidOperationException("Connection string cannot be empty.");
+
+                string searchText = string.IsNullOrWhiteSpace(TsTxtSearchDgv.Text)
+                ? null
+                : TsTxtSearchDgv.Text.Trim().ToLower();
+
+                // Replace '*' with '%' for SQL LIKE query
+                if (!string.IsNullOrWhiteSpace(searchText))
+                {
+                    searchText = searchText.Replace("*", "%");
+                }
+                else
+                {
+                    searchText = null; // normalize empty to null
+                }
+
+                var serachColumns = new List<string> {
+                    "UnitCode",
+                    "UnitCodeAndAliasName",
+                    "EmpCodeAndDisplayName",
+                    "Gender",
+                    "EmpTypeCatgName",
+                    "DutyLocCodeAndName",
+                    "DesigCode",
+                    "DepartmentCode",
+                    "JobCategoryCodeAndName",
+                    "JobGradeCodeLevel",
+                    "ContractorCodeAndName",
+                    "MaritalStatus",
+                    "WeeklyOffFullName",
+                    "BloodGroupDesc"};
+
+                var parameters = new List<SqlParameter>();
+                parameters.Add(new SqlParameter("@UnitCode", SqlDbType.NVarChar) { Value = defaultUnitCode });
+
+                // Get selected employee category globally
+                // DataBound item text (not value) is stored globally for use in other forms
+                int? empCategory = ClassGlobalVariables.pubSelectedEmpCategoryId;
+                if (empCategory.HasValue)
+                {
+                    parameters.Add(new SqlParameter("@EmployeeTypeId", SqlDbType.Int) { Value = empCategory.Value });
+                }
+
+                // Determine the row limit based on TsCmbLimitRows input:
+                // If the text is "(all)", set limit to 0
+                // Otherwise, try parsing to int; if fails, default to 50
+                // ?. ensures Text is not null before calling Trim()(null - conditional operator).
+                int mLimitRows =
+                    TsCmbLimitRows.Text?.Trim().ToLower() == "(all)" ? 0 :
+                    int.TryParse(TsCmbLimitRows.Text, out var value) ? value : 50;
+
+                string orderBy = "UnitCode, EmployeeCode, EmployeeName";
+                string mTableName = "v_Master_Employees";
+
+                // Get data asynchronously
+                DataTable resultTable = await ClassDbHelpers.GetRowsFromTableAsync(
+                    unitCode: defaultUnitCode,  // plant code
+                    tableName: mTableName, // sql table name
+                    selectedColumns: null,   // selectedColumns
+                    serachColumns: serachColumns,  // search sql table columns
+                    additionalParameters: parameters, // sql parameters
+                    searchText: searchText, // search text
+                    orderByClause: orderBy,    // sql order by columns
+                    isDeletedColumn: "IsDeleted", // table column name for IsDeleted
+                    isDeletedValue: isDeletedRows, // isDeletedValue
+                    isActiveColumn: "IsActive", // table column name for IsActive
+                    isActiveValue: isActiveRows, // isActiveValue
+                    limitRows: mLimitRows);
+
+                // Check for empty results
+                if (resultTable == null || resultTable.Rows.Count == 0)
+                {
+                    TsLblDgvListFooter.Text = "No rows found for given parameters.";
+                    return;
+                }
+
+                // Create a filtered DataTable with only the columns we want
+                DataTable filteredTable = new DataTable();
+                var columnsToInclude = new List<string> {
+                    "Id",
+                    "UnitCodeAndAliasName",
+                    "EmpTypeCatgName",
+                    "EmployeeCode",
+                    "EmployeeDisplayName",
+                    "GenderCodeAndName",
+                    "DepartmentCode",
+                    "DesigCode",
+                    "JobCategoryCode"};
+
+                // Add columns to filtered table
+                foreach (string colName in columnsToInclude)
+                {
+                    if (resultTable.Columns.Contains(colName))
+                    {
+                        filteredTable.Columns.Add(colName, resultTable.Columns[colName].DataType);
+                    }
+                }
+
+                // Copy data for selected columns
+                foreach (DataRow row in resultTable.Rows)
+                {
+                    DataRow newRow = filteredTable.NewRow();
+                    foreach (string colName in columnsToInclude)
+                    {
+                        if (resultTable.Columns.Contains(colName))
+                        {
+                            newRow[colName] = row[colName];
+                        }
+                    }
+                    filteredTable.Rows.Add(newRow);
+                }
+
+                // Prepare DataGridView
+                DgvList.Invoke((MethodInvoker)(() =>
+                {
+                    DgvList.DataSource = null;
+                    DgvList.Rows.Clear();
+                    DgvList.Columns.Clear();
+                    DgvList.ReadOnly = true;
+                    DgvList.Refresh();
+                    DgvList.Visible = false;
+                }));
+
+                // Set data source
+                DgvList.Invoke((MethodInvoker)(() => DgvList.DataSource = filteredTable));
+
+                // Define and apply custom headers
+                var customHeaders = new Dictionary<string, string>
+                    {
+                        {"Id", "Id"},
+                        {"UnitCodeAndAliasName", "Plant"},
+                        {"EmpTypeCatgName", "Employment Type"},
+                        {"EmployeeCode", "Employee Code"},
+                        {"EmployeeDisplayName", "Employee Name"},
+                        {"GenderCodeAndName", "Gender"},
+                        {"DepartmentCode", "Department"},
+                        {"DesigCode", "Designation"}
+                    };
+
+                DgvList.Invoke((MethodInvoker)(() =>
+                    {
+                        foreach (DataGridViewColumn column in DgvList.Columns)
+                        {
+                            if (customHeaders.ContainsKey(column.Name))
+                            {
+                                column.HeaderText = customHeaders[column.Name];
+                            }
+                        }
+
+                        // Configure DataGridView appearance
+                        DgvList.ColumnHeadersVisible = true;
+                        DgvList.AllowUserToAddRows = false;
+                        DgvList.AllowUserToDeleteRows = false;
+                        DgvList.ReadOnly = false;
+                        DgvList.RowHeadersWidth = 60;
+                        DgvList.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+                        DgvList.AlternatingRowsDefaultCellStyle.BackColor = Color.AliceBlue;
+
+                        // Set column header style
+                        var columnHeaderStyle = new DataGridViewCellStyle
+                        {
+                            BackColor = Color.Beige
+                        };
+                        DgvList.ColumnHeadersDefaultCellStyle = columnHeaderStyle;
+
+                        // Auto-size columns
+                        DgvList.AutoResizeColumnHeadersHeight();
+                        DgvList.AutoResizeColumns();
+
+                        // Hide ID column
+                        DgvList.Columns["Id"].Visible = false;
+                        DgvList.Columns["Id"].ReadOnly = true;
+
+                        // Add row numbers
+                        for (int i = 0, mRowId = 1; i < DgvList.Rows.Count; i++, mRowId++)
+                        {
+                            DgvList.Rows[i].HeaderCell.Value = mRowId.ToString();
+                        }
+                    }));
+
+                // Populate the dropdown 
+                AddColumnVisibilityDgvItems();
+
+                // Calculate and display elapsed time
+                var elapsedTime = DateTime.Now.Subtract(startTime);
+                TsLblDgvListFooter.Text = $"Fetch Rows [ {resultTable.Rows.Count} ] In: {elapsedTime:hh\\:mm\\:ss}";
+                TsLblDgvListFooter.ForeColor = Color.DarkBlue;
+                Application.DoEvents();
+            }
+            catch (Exception ex)
+            {
+                TsLblDgvListFooter.Text = ex.Message;
+                TsLblDgvListFooter.ForeColor = Color.Red;
+                MessageBox.Show(ex.Message, "Load DataGridView", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                DgvList.Invoke((MethodInvoker)(() =>
+                {
+                    DgvList.ResumeLayout();
+                    DgvList.Visible = true;
+                }));
+
+                progress.Close();
+                progress.Dispose();
+            }
+        }
+        #endregion
+
+
+        #region "AddColumnVisibilityDgvItems"
+        /// <summary>
+        /// call AddColumnVisibilityMenuItems() when you need to populate the dropdown
+        /// </summary>
+        private void AddColumnVisibilityDgvItems()
+        {
+            // Check if we need to invoke on the UI thread
+            if (TsBtnDrpDgvCols.GetCurrentParent()?.InvokeRequired ?? false)
+            {
+                TsBtnDrpDgvCols.GetCurrentParent().Invoke((MethodInvoker)AddColumnVisibilityDgvItems);
+                return;
+            }
+
+            // Clear existing items (if any)
+            TsBtnDrpDgvCols.DropDownItems.Clear();
+
+            // Add menu items for each column
+            for (int i = 0; i < DgvList.Columns.Count; i++)
+            {
+                DataGridViewColumn column = DgvList.Columns[i];
+
+                // Create menu item
+                var menuItem = new ToolStripMenuItem
+                {
+                    Text = column.HeaderText,
+                    Checked = column.Visible,
+                    CheckOnClick = true
+                };
+
+                // Store column reference in Tag
+                menuItem.Tag = column;
+
+                // Handle click event
+                menuItem.Click += (sender, e) =>
+                {
+                    var item = (ToolStripMenuItem)sender;
+                    var col = (DataGridViewColumn)item.Tag;
+                    col.Visible = item.Checked;
+                };
+
+                // Add to dropdown
+                TsBtnDrpDgvCols.DropDownItems.Add(menuItem);
+            }
+        }
+        #endregion
+
         #region "TsBtnAddNew_Click"
         /// <summary>
         /// 
@@ -639,10 +1021,10 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                     ClassDbHelpers.CreateSqlParameter("@FathersName", SqlDbType.NVarChar, myDataTable.FathersName),
                     ClassDbHelpers.CreateSqlParameter("@LastName", SqlDbType.NVarChar, myDataTable.LastName),
                     ClassDbHelpers.CreateSqlParameter("@EmployeeDisplayName", SqlDbType.NVarChar, myDataTable.EmployeeDisplayName),
-                   
+
                     ClassDbHelpers.CreateSqlParameter("@DateOfBirth", SqlDbType.Date, myDataTable.DateOfBirth),
                     ClassDbHelpers.CreateSqlParameter("@DateOfJoining", SqlDbType.Date, myDataTable.DateOfJoining),
-                   
+
                     ClassDbHelpers.CreateSqlParameter("@EmpGenderId", SqlDbType.Int, myDataTable.EmpGenderId),
                     ClassDbHelpers.CreateSqlParameter("@EmployeeTypeId", SqlDbType.Int, myDataTable.EmployeeTypeId),
                     ClassDbHelpers.CreateSqlParameter("@DutyLocationId", SqlDbType.Int, myDataTable.DutyLocationId),

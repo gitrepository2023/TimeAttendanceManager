@@ -52,7 +52,7 @@ namespace TimeAttendanceManager.Main.Forms
             this.TreeViewMain.BeforeCollapse -= TreeViewMain_BeforeCollapse;
             this.TreeViewMain.BeforeExpand -= TreeViewMain_BeforeExpand;
             this.TreeViewMain.NodeMouseDoubleClick -= TreeViewMain_NodeMouseDoubleClick;
-                       
+
             this.TsTxtTviewSearch.KeyDown -= TsTxtTviewSearch_KeyDown;
             this.TsTxtTviewSearch.TextChanged -= TsTxtTviewSearch_TextChanged;
             this.TsBtnTviewSearch.Click -= TsBtnTviewSearch_Click;
@@ -82,7 +82,7 @@ namespace TimeAttendanceManager.Main.Forms
             this.TsTxtTviewSearch.KeyDown += TsTxtTviewSearch_KeyDown;
             this.TsTxtTviewSearch.TextChanged += TsTxtTviewSearch_TextChanged;
             this.TsBtnTviewSearch.Click += TsBtnTviewSearch_Click;
-            this.TsBtnTviewSearchClear.Click += TsBtnTviewSearch_Click; 
+            this.TsBtnTviewSearchClear.Click += TsBtnTviewSearch_Click;
 
 
         }
@@ -95,10 +95,16 @@ namespace TimeAttendanceManager.Main.Forms
         private string _lastSearchText = string.Empty;
         private Color _originalBackColor = Color.Empty;
 
-        #endregion
+        private System.Windows.Forms.Timer _searchTimer;
+        // store original colors so we can restore them (use Tuple because C# 7.3)
+        private Dictionary<TreeNode, Tuple<Color, Color>> _originalColors = new Dictionary<TreeNode, Tuple<Color, Color>>();
+        private readonly Color _highlightBack = Color.FromArgb(255, 255, 210); // light yellow
+        private readonly Color _highlightFore = Color.Black;
 
         //add a static instance:
         public static MDIFrmDashBoard Instance { get; private set; }
+
+        #endregion
 
         #region "FrmMainMdi_Shown"
         private async void FrmMainMdi_Shown(object sender, EventArgs e)
@@ -160,12 +166,12 @@ namespace TimeAttendanceManager.Main.Forms
                 this.Text = fileInfo.ProductName;
 
                 // Show welcome notification
-               this.notifyIcon1.ShowBalloonTip(
-                    3000,
-                    fileInfo.ProductName,
-                    $"Welcome {ClassGlobalVariables.pubUserLoginName}\n\nToday Is {DateTime.Now.ToLongDateString()}",
-                    ToolTipIcon.Info
-                );
+                this.notifyIcon1.ShowBalloonTip(
+                     3000,
+                     fileInfo.ProductName,
+                     $"Welcome {ClassGlobalVariables.pubUserLoginName}\n\nToday Is {DateTime.Now.ToLongDateString()}",
+                     ToolTipIcon.Info
+                 );
 
                 // Set up tab control
                 TabCtrlMain.ImageList = ImageListMdi;
@@ -180,6 +186,9 @@ namespace TimeAttendanceManager.Main.Forms
 
                 // Load Tree View
                 await LoadTreeViewAsync();
+
+                // Set up search timer
+                InitializeTreeSearch();
 
                 // Set focus
                 TsCmbTcodes.Focus();
@@ -207,10 +216,10 @@ namespace TimeAttendanceManager.Main.Forms
         {
             try
             {
-                
                 // Set SplitterDistance to 30% and 40% of the total width
                 SplitMain.SplitterDistance = (int)(this.SplitMain.Width * 0.2);
                 SplitLeft.SplitterDistance = (int)(this.SplitLeft.Width * 0.2);
+                SplitLeft.Panel1Collapsed = true;
             }
             catch (Exception ex)
             {
@@ -877,12 +886,12 @@ namespace TimeAttendanceManager.Main.Forms
             {
                 if (sender == TsBtnTviewSearchClear)
                     TsTxtTviewSearch.Text = null;
-               
-                await LoadTreeViewAsync();
+                    TsLblMenu.Text = "Menu";
+                    await LoadTreeViewAsync();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "TsBtnTviewSearch_Click", MessageBoxButtons.OK,MessageBoxIcon.Exclamation );
+                MessageBox.Show(ex.Message, "TsBtnTviewSearch_Click", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
 
@@ -987,6 +996,35 @@ namespace TimeAttendanceManager.Main.Forms
 
         #endregion
 
+        #region "InitializeTreeSearch"
+
+        /// <summary>
+        /// call this once from constructor or Form_Load
+        /// </summary>
+        private void InitializeTreeSearch()
+        {
+            _searchTimer = new System.Windows.Forms.Timer();
+            _searchTimer.Interval = 300; // ms; small debounce so typing is smooth
+            _searchTimer.Tick += SearchTimer_Tick;
+
+            // If you want real-time while typing, hook TextChanged to restart the timer
+            TsTxtTviewSearch.TextChanged += TsTxtTviewSearch_TextChanged;
+            TsTxtTviewSearch.KeyDown += TsTxtTviewSearch_KeyDown;
+        }
+
+        /// <summary>
+        /// Debounce timer tick -> perform search
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void SearchTimer_Tick(object sender, EventArgs e)
+        {
+            _searchTimer.Stop();
+            PerformSearch();
+        }
+
+        #endregion
+
         #region "LoadTreeViewAsync"
 
         /// <summary>
@@ -999,7 +1037,7 @@ namespace TimeAttendanceManager.Main.Forms
             {
                 UseWaitCursor = true;
                 var unitCode = ClassGlobalVariables.pubUnitCode;
-                
+
                 int? employeeCatgId = TsBtnDrpEmpCatg.Tag is int id ? id : (int?)null;
                 // or, if Tag might be string:
                 if (employeeCatgId is null && TsBtnDrpEmpCatg.Tag is string s && int.TryParse(s, out var parsed))
@@ -1019,7 +1057,8 @@ namespace TimeAttendanceManager.Main.Forms
                     treeView: TreeViewMain,
                     unitCode: unitCode,
                     empCatgId: employeeCatgId,
-                    searchText: searchText
+                    searchText: searchText,
+                    treeViewFont: TreeViewMain.Font
                 );
             }
             catch (Exception ex)
@@ -1051,7 +1090,7 @@ namespace TimeAttendanceManager.Main.Forms
                    : TsBtnDrpEmpCatg.Text;
 
                 TreeViewMain.Nodes.Clear();
-              
+
                 const string tableName = "dbo.v_AdminMenuStructures";
 
                 var sb = new StringBuilder();
@@ -1088,7 +1127,7 @@ namespace TimeAttendanceManager.Main.Forms
                 sb.Append("AND UnitCode = @UnitCode ");
 
                 sb.Append("AND (@EmpCatgName IS NULL OR EmpCatgName = @EmpCatgName) ");
-              
+
                 parameters.Add(new SqlParameter("@UnitCode", SqlDbType.VarChar) { Value = unitCode });
                 parameters.Add(new SqlParameter("@EmpCatgName", SqlDbType.VarChar) { Value = employeeCategory });
 
@@ -1130,7 +1169,7 @@ namespace TimeAttendanceManager.Main.Forms
                     {
                         cmd.Parameters.AddRange(parameters.ToArray());
                     }
-                    
+
                     await conn.OpenAsync();
                     var reader = await cmd.ExecuteReaderAsync();
 
@@ -1331,7 +1370,7 @@ namespace TimeAttendanceManager.Main.Forms
 
         #region "TsTxtTviewSearch_KeyDown"
         /// <summary>
-        /// Search when user presses Enter in textbox
+        /// Handle Enter key to perform search immediately 
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -1351,14 +1390,23 @@ namespace TimeAttendanceManager.Main.Forms
         #endregion
 
         #region "TsTxtTviewSearch_TextChanged"
+        /// <summary>
+        /// Handles the TextChanged event for the search text box, restarting the debounce timer.
+        /// </summary>
+        /// <param name="sender">The source of the event, typically the search text box.</param>
+        /// <param name="e">An <see cref="EventArgs"/> instance containing the event data.</param>
         private void TsTxtTviewSearch_TextChanged(object sender, EventArgs e)
         {
-            // Optional: Perform search as user types (add delay to avoid performance issues)
-            // You might want to use a Timer for delayed search
+            // restart debounce timer
+            _searchTimer.Stop();
+            _searchTimer.Start();
         }
         #endregion
 
         #region "PerformSearch"
+        /// <summary>
+        /// Perform search based on current text in TsTxtTviewSearch.     
+        /// </summary>
         private void PerformSearch()
         {
             string searchText = TsTxtTviewSearch.Text.Trim();
@@ -1370,54 +1418,67 @@ namespace TimeAttendanceManager.Main.Forms
             }
 
             // If search text changed, start new search
-            if (searchText != _lastSearchText)
+            if (!string.Equals(searchText, _lastSearchText, StringComparison.OrdinalIgnoreCase))
             {
                 ClearSearchHighlight();
                 _searchResults = FindNodesWithText(TreeViewMain.Nodes, searchText, StringComparison.OrdinalIgnoreCase);
                 _currentSearchIndex = -1;
                 _lastSearchText = searchText;
+
+                // Highlight all matches (light yellow)
+                HighlightAllMatches();
             }
 
             if (_searchResults.Count > 0)
             {
+                // Move to first result immediately (or you can leave selection as-is)
                 FindNext();
             }
             else
             {
-                MessageBox.Show($"No results found for '{searchText}'", "Search", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // optional: silent or show message
+                // MessageBox.Show($"No results found for '{searchText}'", "Search", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
         #endregion
 
         #region "FindNext"
+        /// <summary>
+        /// Advances to the next search result in the list and selects the corresponding node in the tree view.
+        /// </summary>
+        /// <remarks>If the search results are empty or null, the method does nothing. The selection wraps
+        /// around to the  beginning of the search results when the end is reached. The selected node is made visible in
+        /// the tree view,  and the focus is returned to the search text box to allow continued input.</remarks>
         private void FindNext()
         {
-            if (_searchResults.Count == 0) return;
+            if (_searchResults == null || _searchResults.Count == 0) return;
 
             _currentSearchIndex = (_currentSearchIndex + 1) % _searchResults.Count;
             TreeNode foundNode = _searchResults[_currentSearchIndex];
 
-            // Clear previous highlight
-            ClearSearchHighlight();
+            if (foundNode == null) return;
 
-            // Highlight current node
-            foundNode.BackColor = Color.Yellow;
-            foundNode.ForeColor = Color.Black;
-            _originalBackColor = foundNode.BackColor; // Store for clearing later
-
-            // Ensure node is visible and selected
-            foundNode.EnsureVisible();
+            // select the found node
             TreeViewMain.SelectedNode = foundNode;
-            TreeViewMain.Focus();
+            foundNode.EnsureVisible();
 
-            // Update status (optional)
+            // REMOVE this line to keep focus in the TextBox
+            // TreeViewMain.Focus();
+
+            // instead, keep caret in the search textbox
+            TsTxtTviewSearch.Focus();
+            TsTxtTviewSearch.SelectionStart = TsTxtTviewSearch.TextLength; // move caret to end
+            TsTxtTviewSearch.SelectionLength = 0;
+
+            // Optionally give a brief visual cue to the selected node (e.g., change BackColor briefly)
+            // But avoid permanently overriding the shared highlight; we'll keep the matched nodes highlighted.
             UpdateSearchStatus();
         }
         #endregion
 
         #region "FindNodesWithText"
         /// <summary>
-        /// Recursive method to find nodes containing text
+        /// Recursively search nodes and return list of matching nodes
         /// </summary>
         /// <param name="nodes"></param>
         /// <param name="searchText"></param>
@@ -1426,52 +1487,80 @@ namespace TimeAttendanceManager.Main.Forms
         private List<TreeNode> FindNodesWithText(TreeNodeCollection nodes, string searchText, StringComparison comparison)
         {
             var results = new List<TreeNode>();
-
             foreach (TreeNode node in nodes)
             {
-                // Check if node text contains search text
-                if (node.Text.IndexOf(searchText, comparison) >= 0)
+                // match if node.Text contains search text
+                if (!string.IsNullOrEmpty(node.Text) && node.Text.IndexOf(searchText, comparison) >= 0)
                 {
                     results.Add(node);
                 }
 
-                // Recursively search child nodes
-                results.AddRange(FindNodesWithText(node.Nodes, searchText, comparison));
+                // search children
+                if (node.Nodes != null && node.Nodes.Count > 0)
+                {
+                    results.AddRange(FindNodesWithText(node.Nodes, searchText, comparison));
+                }
             }
-
             return results;
+        }
+        #endregion
+
+        #region "HighlightAllMatches"
+        /// <summary>
+        /// Highlight all nodes in _searchResults. 
+        /// Save original colors in _originalColors to restore later.
+        /// </summary>
+        private void HighlightAllMatches()
+        {
+            foreach (var node in _searchResults)
+            {
+                // save original colors only once per node
+                if (!_originalColors.ContainsKey(node))
+                {
+                    _originalColors[node] = Tuple.Create(node.BackColor, node.ForeColor);
+                }
+
+                node.BackColor = _highlightBack;
+                node.ForeColor = _highlightFore;
+
+                // optionally ensure node is visible so user notices highlights while typing
+                node.EnsureVisible();
+            }
         }
         #endregion
 
         #region "ClearSearchHighlight"
         /// <summary>
-        /// Clear all search highlights
+        /// Clear any highlights and restore original colors
         /// </summary>
         private void ClearSearchHighlight()
         {
-            foreach (TreeNode node in _searchResults)
+            foreach (var kvp in _originalColors.ToList())
             {
-                node.BackColor = TreeViewMain.BackColor;
-                node.ForeColor = TreeViewMain.ForeColor;
+                var node = kvp.Key;
+                if (node != null)
+                {
+                    node.BackColor = kvp.Value.Item1;
+                    node.ForeColor = kvp.Value.Item2;
+                }
             }
 
             _searchResults.Clear();
             _currentSearchIndex = -1;
             _lastSearchText = string.Empty;
+            TsLblMenu.Text = "Menu";
         }
         #endregion
 
         #region "UpdateSearchStatus"
         private void UpdateSearchStatus()
         {
-            //if (_searchResults.Count > 0)
-            //{
-            //    TsLblSearchStatus.Text = $"{_currentSearchIndex + 1} of {_searchResults.Count}";
-            //}
-            //else
-            //{
-            //    TsLblSearchStatus.Text = "No results";
-            //}
+            if (_searchResults == null || _searchResults.Count == 0)
+            {
+                return;
+            }
+            int displayIndex = (_currentSearchIndex >= 0) ? _currentSearchIndex + 1 : 0;
+            TsLblMenu.Text = $"{displayIndex} of {_searchResults.Count}";
         }
         #endregion
 
@@ -1563,9 +1652,9 @@ namespace TimeAttendanceManager.Main.Forms
         /// 
         /// </summary>
 
-        private async Task SaveUserLoginDefaultXmlAsync() 
+        private async Task SaveUserLoginDefaultXmlAsync()
         {
-            try 
+            try
             {
                 var defaults = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
@@ -1607,7 +1696,7 @@ namespace TimeAttendanceManager.Main.Forms
         /// <returns></returns>
         private async Task ReadUserLoginDefaultXmlAsync()
         {
-            try 
+            try
             {
 
                 string connectionString = ClassGlobalFunctions.GetConnectionStringByUnitCode(

@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TimeAttendanceManager.Helpers.Classes;
@@ -38,9 +39,24 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             // Consider adding this if you want the global default as fallback:
             mUnitCode = myUnitCode ?? ClassGlobalVariables.pubUnitCode;
 
+            this.KeyPreview = true; // Important for form to receive key events
+
+            // Remove existing event handlers to prevent duplicates
+            this.Load -= Form_Load;
+            this.KeyDown -= FrmMMMenuModalFormNames_KeyDown;
+            this.TsBtnClose.Click -= TsBtnClose_Click;
+            this.TsBtRefreshDgv.Click -= TsBtRefreshDgv_Click;
+            this.TsBtnClearSearchDgv.Click -= TsBtRefreshDgv_Click;
+            this.TsBtnSearchDgv.Click -= TsBtRefreshDgv_Click;
+            this.TsTxtSearchDgv.KeyDown -= TsTxtSearchDgv_KeyDown;
+            this.TsBtnDrpColsDgvTblCols.DropDownItemClicked -= TsBtnDrpColsDgvTblCols_DropDownItemClicked;
+            this.TsBtnSelectRow.Click -= TsBtnSelectRow_Click;
+            this.DgvList.CellDoubleClick -= DgvList_CellDoubleClick;
+            this.TsBtnNotAssign.Click -= TsBtnNotAssign_Click;
+
+            // Add event handlers
             this.Load += Form_Load;
             this.KeyDown += FrmMMMenuModalFormNames_KeyDown;
-            this.KeyPreview = true; // Important for form to receive key events
             this.TsBtnClose.Click += TsBtnClose_Click;
             this.TsBtRefreshDgv.Click += TsBtRefreshDgv_Click;
             this.TsBtnClearSearchDgv.Click += TsBtRefreshDgv_Click;
@@ -49,6 +65,8 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsBtnDrpColsDgvTblCols.DropDownItemClicked += TsBtnDrpColsDgvTblCols_DropDownItemClicked;
             this.TsBtnSelectRow.Click += TsBtnSelectRow_Click;
             this.DgvList.CellDoubleClick += DgvList_CellDoubleClick;
+            this.TsBtnNotAssign.Click += TsBtnNotAssign_Click;
+
         }
         #endregion
 
@@ -280,7 +298,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
 
                 var parameters = new List<SqlParameter>();
                 parameters.Add(new SqlParameter("@IsActive", SqlDbType.Bit) { Value = 1 });
-               
+
                 string orderBy = "FormName, FormTitle ";
 
                 // Get data asynchronously
@@ -302,7 +320,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
 
                 // Create a filtered DataTable with only the columns we want
                 DataTable filteredTable = new DataTable();
-                var columnsToInclude = new List<string> { "Id", "FormName", "FormTitle", "IsActive" };
+                var columnsToInclude = new List<string> { "Id", "FormName", "FormTitle" };
 
                 // Add columns to filtered table
                 foreach (string colName in columnsToInclude)
@@ -345,8 +363,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
                     {
                         {"Id", "Id"},
                         {"FormName", "Form Name"},
-                        {"FormTitle", "Form Title"},
-                        {"IsActive", "Is Active"}
+                        {"FormTitle", "Form Title"}
                     };
 
                 DgvList.Invoke((MethodInvoker)(() =>
@@ -367,6 +384,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
                     DgvList.RowHeadersWidth = 60;
                     DgvList.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
                     DgvList.AlternatingRowsDefaultCellStyle.BackColor = Color.AliceBlue;
+                    DgvList.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
                     // Set column header style
                     var columnHeaderStyle = new DataGridViewCellStyle
@@ -561,9 +579,252 @@ namespace TimeAttendanceManager.MenuDesign.Forms
                                MessageBoxIcon.Error);
             }
         }
-        #endregion 
+        #endregion
 
+        #region "TsBtnNotAssign_Click"
+        /// <summary>
+        /// Load FormNames not assigned to any MenuStructure
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void TsBtnNotAssign_Click(object sender, EventArgs e)
+        {
+            var startTime = DateTime.Now;  // Storing Start Time
+            var progress = new FrmAdminProgress();
 
+            try
+            {
+                // Initialize progress form
+                progress.LblStatus.Text = "Updating List.";
+                progress.LblMoreStatus.Text = "Please Wait...";
+                progress.ProgressBar1.Visible = false;
+                progress.Show();
+
+                // Update status label
+                TsLblDgvListFooter.Text = "Fetching Rows. Please wait...";
+                TsLblDgvListFooter.ForeColor = Color.DarkBlue;
+                Application.DoEvents();
+
+                string searchText = string.IsNullOrWhiteSpace(TsTxtSearchDgv.Text)
+                ? null
+                : TsTxtSearchDgv.Text.Trim().ToLower();
+
+                // Replace '*' with '%' for SQL LIKE query
+                if (!string.IsNullOrWhiteSpace(searchText))
+                {
+                    searchText = searchText.Replace("*", "%");
+                }
+                else
+                {
+                    searchText = null; // normalize empty to null
+                }
+
+                var serachColumns = new List<string> { "FormName",
+                    "FormTitle" };
+
+                var parameters = new List<SqlParameter>();
+                parameters.Add(new SqlParameter("@IsActive", SqlDbType.Bit) { Value = 1 });
+
+                string orderBy = "FormName, FormTitle ";
+
+                // Get connection string based on unit code
+                string connectionString = ClassGlobalFunctions.GetConnectionStringByUnitCode(mUnitCode);
+
+                // Get data asynchronously
+                DataTable resultTable = await GetUnreferencedFormNamesAsync(connectionString);
+
+                // Check for empty results
+                if (resultTable == null || resultTable.Rows.Count == 0)
+                {
+                    TsLblDgvListFooter.Text = "No rows found for given parameters.";
+                    return;
+                }
+
+                // Create a filtered DataTable with only the columns we want
+                DataTable filteredTable = new DataTable();
+                var columnsToInclude = new List<string> { "Id", "FormName", "FormTitle" };
+
+                // Add columns to filtered table
+                foreach (string colName in columnsToInclude)
+                {
+                    if (resultTable.Columns.Contains(colName))
+                    {
+                        filteredTable.Columns.Add(colName, resultTable.Columns[colName].DataType);
+                    }
+                }
+
+                // Copy data for selected columns
+                foreach (DataRow row in resultTable.Rows)
+                {
+                    DataRow newRow = filteredTable.NewRow();
+                    foreach (string colName in columnsToInclude)
+                    {
+                        if (resultTable.Columns.Contains(colName))
+                        {
+                            newRow[colName] = row[colName];
+                        }
+                    }
+                    filteredTable.Rows.Add(newRow);
+                }
+
+                // Prepare DataGridView
+                DgvList.Invoke((MethodInvoker)(() =>
+                {
+                    DgvList.DataSource = null;
+                    DgvList.Rows.Clear();
+                    DgvList.Columns.Clear();
+                    DgvList.Refresh();
+                    DgvList.Visible = false;
+                }));
+
+                // Set data source
+                DgvList.Invoke((MethodInvoker)(() => DgvList.DataSource = filteredTable));
+
+                // Define and apply custom headers
+                var customHeaders = new Dictionary<string, string>
+                    {
+                        {"Id", "Id"},
+                        {"FormName", "Form Name"},
+                        {"FormTitle", "Form Title"}
+                    };
+
+                DgvList.Invoke((MethodInvoker)(() =>
+                {
+                    foreach (DataGridViewColumn column in DgvList.Columns)
+                    {
+                        if (customHeaders.ContainsKey(column.Name))
+                        {
+                            column.HeaderText = customHeaders[column.Name];
+                        }
+                    }
+
+                    // Configure DataGridView appearance
+                    DgvList.ColumnHeadersVisible = true;
+                    DgvList.AllowUserToAddRows = false;
+                    DgvList.AllowUserToDeleteRows = false;
+                    DgvList.ReadOnly = true;
+                    DgvList.RowHeadersWidth = 60;
+                    DgvList.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+                    DgvList.AlternatingRowsDefaultCellStyle.BackColor = Color.AliceBlue;
+
+                    // Set column header style
+                    var columnHeaderStyle = new DataGridViewCellStyle
+                    {
+                        BackColor = Color.Beige
+                    };
+                    DgvList.ColumnHeadersDefaultCellStyle = columnHeaderStyle;
+
+                    // Auto-size columns
+                    DgvList.AutoResizeColumnHeadersHeight();
+                    DgvList.AutoResizeColumns();
+
+                    // Hide ID column
+                    DgvList.Columns["Id"].Visible = false;
+                    DgvList.Columns["Id"].ReadOnly = true;
+
+                    // Add row numbers
+                    for (int i = 0, mRowId = 1; i < DgvList.Rows.Count; i++, mRowId++)
+                    {
+                        DgvList.Rows[i].HeaderCell.Value = mRowId.ToString();
+                    }
+                }));
+
+                // Populate the dropdown 
+                AddColumnVisibilityDgvItems();
+
+                // Calculate and display elapsed time
+                var elapsedTime = DateTime.Now.Subtract(startTime);
+                TsLblDgvListFooter.Text = $"Fetch Rows [ {resultTable.Rows.Count} ] In: {elapsedTime:hh\\:mm\\:ss}";
+                TsLblDgvListFooter.ForeColor = Color.DarkBlue;
+                Application.DoEvents();
+            }
+            catch (Exception ex)
+            {
+                TsLblDgvListFooter.Text = ex.Message;
+                TsLblDgvListFooter.ForeColor = Color.Red;
+                MessageBox.Show(ex.Message, "Load DataGridView", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                DgvList.Invoke((MethodInvoker)(() =>
+                {
+                    DgvList.ResumeLayout();
+                    DgvList.Visible = true;
+                }));
+
+                progress.Close();
+                progress.Dispose();
+            }
+        }
+        #endregion
+
+        #region "GetUnreferencedFormNamesAsync"
+        /// <summary>
+        /// Returns rows from AdminMenuFormNames whose FormName is not referenced by AdminMenuStructures.MenuFormName.
+        /// </summary>
+        /// <param name="connectionString">SQL Server connection string</param>
+        /// <param name="cancellationToken">optional cancellation token</param>
+        /// <returns>DataTable with the resulting rows</returns>
+        public static async Task<DataTable> GetUnreferencedFormNamesAsync(
+            string connectionString,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new ArgumentException("connectionString is required", nameof(connectionString));
+
+            // Use LEFT JOIN + IS NULL to correctly handle NULLs and avoid NOT IN pitfalls
+            const string sql = @"
+                SELECT f.[Id], f.[FormName], f.[FormTitle], f.[IsActive]
+                FROM [dbo].[AdminMenuFormNames] AS f
+                LEFT JOIN [dbo].[AdminMenuStructures] AS s
+                    ON f.[FormName] = s.[MenuFormName]
+                WHERE s.[MenuFormName] IS NULL;
+                ";
+
+            var dt = new DataTable();
+
+            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                await conn.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+                // ExecuteReaderAsync returns a reader we can iterate with ReadAsync
+                using (var reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken).ConfigureAwait(false))
+                {
+                    // Build DataTable schema from reader
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        // Create column with same name & type (handle nullable types)
+                        var fieldType = reader.GetFieldType(i);
+                        var columnType = Nullable.GetUnderlyingType(fieldType) ?? fieldType;
+                        dt.Columns.Add(reader.GetName(i), columnType);
+                    }
+
+                    // Fill DataTable asynchronously, row-by-row
+                    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    {
+                        var values = new object[reader.FieldCount];
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            values[i] = await GetFieldValueSafeAsync(reader, i, cancellationToken).ConfigureAwait(false);
+                        }
+                        dt.Rows.Add(values);
+                    }
+                }
+            }
+
+            return dt;
+        }
+
+        // Helper: retrieve a value safely (reader.GetValue is synchronous but cheap for the current row)
+        private static Task<object> GetFieldValueSafeAsync(SqlDataReader reader, int ordinal, CancellationToken cancellationToken)
+        {
+            // We keep this synchronous as GetValue for the current row is immediate.
+            // Wrap in Task.FromResult so the call-site can remain async-friendly.
+            object val = reader.IsDBNull(ordinal) ? (object)DBNull.Value : reader.GetValue(ordinal);
+            return Task.FromResult(val);
+        }
+        #endregion
 
     }
 }

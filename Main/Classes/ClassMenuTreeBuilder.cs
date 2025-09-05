@@ -80,11 +80,23 @@ namespace TimeAttendanceManager.Main.Classes
 {
     public static class ClassMenuTreeBuilder
     {
+        #region "LoadMenuTreeAsync"
+        /// <summary>
+        /// Load Menu Tree asynchronously into a TreeView control
+        /// </summary>
+        /// <param name="treeView"></param>
+        /// <param name="unitCode"></param>
+        /// <param name="empCatgId"></param>
+        /// <param name="searchText"></param>
+        /// <param name="treeViewFont"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         public static async Task LoadMenuTreeAsync(
             TreeView treeView,
             string unitCode = null,          
             int? empCatgId = null,
             string searchText = null,
+            Font treeViewFont = null,
             CancellationToken ct = default)
         {
             // 1) Fetch the data
@@ -96,7 +108,7 @@ namespace TimeAttendanceManager.Main.Classes
                 ct);
 
             // 2) Build the tree structure in memory
-            var roots = BuildTreeNodes(dt);
+            var roots = BuildTreeNodes(dt, treeViewFont);
 
             // 3) Apply to UI
             if (treeView.InvokeRequired)
@@ -108,7 +120,19 @@ namespace TimeAttendanceManager.Main.Classes
                 ApplyNodes(treeView, roots);
             }
         }
+        #endregion
 
+        #region "FetchMenuDataAsync"
+        /// <summary>
+        /// Fetch menu data from database based on parameters     
+        /// </summary>
+        /// <param name="userRowGuid"></param>
+        /// <param name="unitCode"></param>
+        /// <param name="empCatgId"></param>
+        /// <param name="searchText"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
         private static async Task<DataTable> FetchMenuDataAsync(
             string userRowGuid = null,
             string unitCode = null,
@@ -212,114 +236,136 @@ namespace TimeAttendanceManager.Main.Classes
             return dt;
         }
 
-        private static List<TreeNode> BuildTreeNodes(DataTable dt)
+        #endregion
+
+        #region "BuildTreeNodes"
+        /// <summary>
+        /// Build TreeNodes from DataTable 
+        /// var nodes = BuildTreeNodes(myDataTable, TreeViewMain.Font);
+        /// </summary>
+        /// <param name="dt"></param>
+        /// <param name="treeViewFont"></param>
+        /// <returns></returns>
+        private static List<TreeNode> BuildTreeNodes(DataTable dt, Font treeViewFont)
         {
             var roots = new List<TreeNode>();
             if (dt == null || dt.Rows.Count == 0) return roots;
 
-            // Group by UnitName (root)
-            var byUnit = dt.AsEnumerable()
-                .GroupBy(r => (r["UnitAliasName"]?.ToString() ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase);
+            // create a single bold font derived from the tree's font and reuse it
+            // Note: owner should dispose this font when nodes/tree are discarded (see notes).
+            var boldFont = new Font(treeViewFont, FontStyle.Bold);
 
-            foreach (var unitGroup in byUnit)
+            try
             {
-                var unitName = string.IsNullOrWhiteSpace(unitGroup.Key) ? "(Unknown Unit)" : unitGroup.Key;
-                var unitRoot = new TreeNode(unitName) { Name = unitName };
-                roots.Add(unitRoot);
-               
-                unitRoot.ForeColor = Color.DarkRed;
-                unitRoot.ImageKey = "store-small.png";
-                unitRoot.SelectedImageKey = "store-small.png";
-                
-                // Categories: rows where MenuNodeType = 'Category'
-                var categories = unitGroup
-                    .Where(r => string.Equals(r["MenuNodeType"]?.ToString(), "Category", StringComparison.OrdinalIgnoreCase))
-                    .OrderBy(r => SafeInt(r["MenuSortOrder"]))
-                    .ThenBy(r => (r["MenuFormTitle"]?.ToString() ?? string.Empty));
+                var byUnit = dt.AsEnumerable()
+                    .GroupBy(r => (r["UnitAliasName"]?.ToString() ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase);
 
-                // Pre-create category nodes dictionary by (Id or Title). Prefer Id if present.
-                var categoryMap = new Dictionary<string, TreeNode>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var catRow in categories)
+                foreach (var unitGroup in byUnit)
                 {
-                    var catTitle = (catRow["MenuFormTitle"]?.ToString() ?? string.Empty).Trim();
-                    if (string.IsNullOrWhiteSpace(catTitle)) continue; // skip empty-titled categories
+                    var unitName = string.IsNullOrWhiteSpace(unitGroup.Key) ? "(Unknown Unit)" : unitGroup.Key;
+                    var unitRoot = new TreeNode(unitName) { Name = unitName };
+                    roots.Add(unitRoot);
 
-                    var key = (catRow["Id"]?.ToString() ?? catTitle).Trim();
-                    if (categoryMap.ContainsKey(key)) continue;
+                    unitRoot.ForeColor = Color.DarkRed;
+                    unitRoot.ImageKey = "store-small.png";
+                    unitRoot.SelectedImageKey = "store-small.png";
 
-                    var catNode = new TreeNode(catTitle)
+                    var categories = unitGroup
+                        .Where(r => string.Equals(r["MenuNodeType"]?.ToString(), "Category", StringComparison.OrdinalIgnoreCase))
+                        .OrderBy(r => SafeInt(r["MenuSortOrder"]))
+                        .ThenBy(r => (r["MenuFormTitle"]?.ToString() ?? string.Empty));
+
+                    var categoryMap = new Dictionary<string, TreeNode>(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var catRow in categories)
                     {
-                        Name = key,
-                        Tag = null // Category nodes don't need a Tag (no form)
-                    };
-                    categoryMap[key] = catNode;
-                    unitRoot.Nodes.Add(catNode);
+                        var catTitle = (catRow["MenuFormTitle"]?.ToString() ?? string.Empty).Trim();
+                        if (string.IsNullOrWhiteSpace(catTitle)) continue;
 
-                    catNode.ForeColor = Color.DarkBlue;
-                    catNode.ImageKey = "folders16x16.png";
-                    catNode.SelectedImageKey = "folders16x16.png";
+                        var key = (catRow["Id"]?.ToString() ?? catTitle).Trim();
+                        if (categoryMap.ContainsKey(key)) continue;
 
-                }
+                        var catNode = new TreeNode(catTitle)
+                        {
+                            Name = key,
+                            Tag = null
+                        };
+                        categoryMap[key] = catNode;
+                        unitRoot.Nodes.Add(catNode);
 
-                // Commands: MenuNodeType = 'Command' AND MenuFormName not null/empty
-                var commands = unitGroup
-                    .Where(r => string.Equals(r["MenuNodeType"]?.ToString(), "Command", StringComparison.OrdinalIgnoreCase))
-                    .OrderBy(r => SafeInt(r["MenuSortOrder"]))
-                    .ThenBy(r => (r["MenuFormTitle"]?.ToString() ?? string.Empty));
+                        catNode.ForeColor = Color.DarkBlue;
+                        catNode.ImageKey = "folders16x16.png";
+                        catNode.SelectedImageKey = "folders16x16.png";
 
-                foreach (var cmdRow in commands)
-                {
-                    var title = (cmdRow["MenuFormTitle"]?.ToString() ?? string.Empty).Trim();
-                    var formName = (cmdRow["MenuFormName"]?.ToString() ?? string.Empty).Trim();
+                        // Use the single boldFont we created
+                        catNode.NodeFont = boldFont;
+                    }
 
-                    // Only add if MenuFormName present
-                    if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(formName))
-                        continue;
+                    // commands logic (unchanged)...
+                    var commands = unitGroup
+                        .Where(r => string.Equals(r["MenuNodeType"]?.ToString(), "Command", StringComparison.OrdinalIgnoreCase))
+                        .OrderBy(r => SafeInt(r["MenuSortOrder"]))
+                        .ThenBy(r => (r["MenuFormTitle"]?.ToString() ?? string.Empty));
 
-                    var node = new TreeNode(title)
+                    foreach (var cmdRow in commands)
                     {
-                        Name = (cmdRow["Id"]?.ToString() ?? title).Trim(),
-                        Tag = formName // Store form to open later
-                    };
+                        var title = (cmdRow["MenuFormTitle"]?.ToString() ?? string.Empty).Trim();
+                        var formName = (cmdRow["MenuFormName"]?.ToString() ?? string.Empty).Trim();
+                        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(formName)) continue;
 
-                    node.ForeColor = Color.DarkBlue;
-                    node.ImageKey = "notebook16x16.png";
-                    node.SelectedImageKey = "tick_small16x16.png";
+                        var node = new TreeNode(title)
+                        {
+                            Name = (cmdRow["Id"]?.ToString() ?? title).Trim(),
+                            Tag = formName
+                        };
 
-                    // Attach under its category if we can resolve one; else under the unit root
-                    var parentTitle = (cmdRow["ParentTitle"]?.ToString() ?? string.Empty).Trim();
-                    if (!string.IsNullOrWhiteSpace(parentTitle))
-                    {
-                        // Try to find a category by title or by parent id if available
-                        var parentIdKey = (cmdRow["ParentId"]?.ToString() ?? string.Empty).Trim();
+                        node.ForeColor = Color.Blue;
+                        node.ImageKey = "notebook16x16.png";
+                        node.SelectedImageKey = "tick_small16x16.png";
 
-                        TreeNode parentNode = null;
+                        var parentTitle = (cmdRow["ParentTitle"]?.ToString() ?? string.Empty).Trim();
+                        if (!string.IsNullOrWhiteSpace(parentTitle))
+                        {
+                            var parentIdKey = (cmdRow["ParentId"]?.ToString() ?? string.Empty).Trim();
+                            TreeNode parentNode = null;
 
-                        if (!string.IsNullOrWhiteSpace(parentIdKey) && categoryMap.TryGetValue(parentIdKey, out var byId))
-                            parentNode = byId;
+                            if (!string.IsNullOrWhiteSpace(parentIdKey) && categoryMap.TryGetValue(parentIdKey, out var byId))
+                                parentNode = byId;
+                            else
+                                parentNode = categoryMap.Values.FirstOrDefault(n =>
+                                    string.Equals(n.Text, parentTitle, StringComparison.OrdinalIgnoreCase));
+
+                            if (parentNode != null)
+                                parentNode.Nodes.Add(node);
+                            else
+                                unitRoot.Nodes.Add(node);
+                        }
                         else
                         {
-                            // fallback find by title
-                            parentNode = categoryMap.Values.FirstOrDefault(n =>
-                                string.Equals(n.Text, parentTitle, StringComparison.OrdinalIgnoreCase));
-                        }
-
-                        if (parentNode != null)
-                            parentNode.Nodes.Add(node);
-                        else
                             unitRoot.Nodes.Add(node);
-                    }
-                    else
-                    {
-                        unitRoot.Nodes.Add(node);
+                        }
                     }
                 }
-            }
 
-            return roots;
+                // Important: do NOT dispose boldFont here, nodes reference it. Caller must dispose when done.
+                return roots;
+            }
+            catch
+            {
+                // if exception, we should not leave an unmanaged font undisposed in some flows.
+                // Better approach: make caller manage boldFont lifecycle; kept simple here.
+                throw;
+            }
         }
 
+        #endregion
+
+        #region "ApplyNodes"
+        /// <summary>
+        /// Apply the built nodes to the TreeView control     
+        /// </summary>
+        /// <param name="tv"></param>
+        /// <param name="roots"></param>
         private static void ApplyNodes(TreeView tv, List<TreeNode> roots)
         {
             tv.BeginUpdate();
@@ -334,6 +380,7 @@ namespace TimeAttendanceManager.Main.Classes
                 tv.EndUpdate();
             }
         }
+        #endregion
 
         private static int SafeInt(object o)
             => int.TryParse(o?.ToString(), out var v) ? v : int.MaxValue;

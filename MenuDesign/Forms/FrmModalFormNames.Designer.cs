@@ -52,6 +52,8 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsBtnSelectRow = new FontAwesome.Sharp.IconToolStripButton();
             this.TsCmbLimitRows = new System.Windows.Forms.ToolStripComboBox();
             this.DgvList = new System.Windows.Forms.DataGridView();
+            this.TsBtnNotAssign = new FontAwesome.Sharp.IconToolStripButton();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
             this.ToolStripCaption.SuspendLayout();
             this.statusStrip2.SuspendLayout();
@@ -132,10 +134,12 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsBtnSearchDgv,
             this.ToolStripSeparator1,
             this.TsBtnSelectRow,
+            this.toolStripSeparator2,
+            this.TsBtnNotAssign,
             this.TsCmbLimitRows});
             this.ToolStripShiftSchedule.Location = new System.Drawing.Point(0, 31);
             this.ToolStripShiftSchedule.Name = "ToolStripShiftSchedule";
-            this.ToolStripShiftSchedule.Size = new System.Drawing.Size(784, 25);
+            this.ToolStripShiftSchedule.Size = new System.Drawing.Size(784, 27);
             this.ToolStripShiftSchedule.TabIndex = 34;
             this.ToolStripShiftSchedule.Text = "ToolStrip1";
             // 
@@ -149,14 +153,14 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsBtRefreshDgv.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
             this.TsBtRefreshDgv.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.TsBtRefreshDgv.Name = "TsBtRefreshDgv";
-            this.TsBtRefreshDgv.Size = new System.Drawing.Size(23, 22);
+            this.TsBtRefreshDgv.Size = new System.Drawing.Size(23, 24);
             this.TsBtRefreshDgv.Text = "Refresh";
             this.TsBtRefreshDgv.ToolTipText = "Refresh List";
             // 
             // ToolStripSeparator8
             // 
             this.ToolStripSeparator8.Name = "ToolStripSeparator8";
-            this.ToolStripSeparator8.Size = new System.Drawing.Size(6, 25);
+            this.ToolStripSeparator8.Size = new System.Drawing.Size(6, 27);
             // 
             // TsBtnDrpColsDgvTblCols
             // 
@@ -168,13 +172,13 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsBtnDrpColsDgvTblCols.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
             this.TsBtnDrpColsDgvTblCols.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.TsBtnDrpColsDgvTblCols.Name = "TsBtnDrpColsDgvTblCols";
-            this.TsBtnDrpColsDgvTblCols.Size = new System.Drawing.Size(29, 22);
+            this.TsBtnDrpColsDgvTblCols.Size = new System.Drawing.Size(29, 24);
             this.TsBtnDrpColsDgvTblCols.Text = "Show / Hide Columns";
             // 
             // ToolStripSeparator12
             // 
             this.ToolStripSeparator12.Name = "ToolStripSeparator12";
-            this.ToolStripSeparator12.Size = new System.Drawing.Size(6, 25);
+            this.ToolStripSeparator12.Size = new System.Drawing.Size(6, 27);
             // 
             // TsBtnExpandCollapse
             // 
@@ -186,20 +190,20 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsBtnExpandCollapse.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
             this.TsBtnExpandCollapse.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.TsBtnExpandCollapse.Name = "TsBtnExpandCollapse";
-            this.TsBtnExpandCollapse.Size = new System.Drawing.Size(23, 22);
+            this.TsBtnExpandCollapse.Size = new System.Drawing.Size(23, 24);
             this.TsBtnExpandCollapse.Text = "Expand / Collpase";
             // 
             // ToolStripSeparator13
             // 
             this.ToolStripSeparator13.Name = "ToolStripSeparator13";
-            this.ToolStripSeparator13.Size = new System.Drawing.Size(6, 25);
+            this.ToolStripSeparator13.Size = new System.Drawing.Size(6, 27);
             // 
             // TsTxtSearchDgv
             // 
             this.TsTxtSearchDgv.BackColor = System.Drawing.Color.LemonChiffon;
             this.TsTxtSearchDgv.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.TsTxtSearchDgv.Name = "TsTxtSearchDgv";
-            this.TsTxtSearchDgv.Size = new System.Drawing.Size(220, 25);
+            this.TsTxtSearchDgv.Size = new System.Drawing.Size(220, 27);
             this.TsTxtSearchDgv.ToolTipText = "Enter Search Text";
             // 
             // TsBtnClearSearchDgv
@@ -213,7 +217,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsBtnClearSearchDgv.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
             this.TsBtnClearSearchDgv.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.TsBtnClearSearchDgv.Name = "TsBtnClearSearchDgv";
-            this.TsBtnClearSearchDgv.Size = new System.Drawing.Size(23, 22);
+            this.TsBtnClearSearchDgv.Size = new System.Drawing.Size(23, 24);
             this.TsBtnClearSearchDgv.Text = "Clear";
             this.TsBtnClearSearchDgv.ToolTipText = "Clear search text";
             // 
@@ -227,14 +231,14 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsBtnSearchDgv.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
             this.TsBtnSearchDgv.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.TsBtnSearchDgv.Name = "TsBtnSearchDgv";
-            this.TsBtnSearchDgv.Size = new System.Drawing.Size(23, 22);
+            this.TsBtnSearchDgv.Size = new System.Drawing.Size(23, 24);
             this.TsBtnSearchDgv.Text = "Search";
             this.TsBtnSearchDgv.ToolTipText = "Search in DataGrid";
             // 
             // ToolStripSeparator1
             // 
             this.ToolStripSeparator1.Name = "ToolStripSeparator1";
-            this.ToolStripSeparator1.Size = new System.Drawing.Size(6, 25);
+            this.ToolStripSeparator1.Size = new System.Drawing.Size(6, 27);
             // 
             // TsBtnSelectRow
             // 
@@ -246,7 +250,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.TsBtnSelectRow.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
             this.TsBtnSelectRow.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.TsBtnSelectRow.Name = "TsBtnSelectRow";
-            this.TsBtnSelectRow.Size = new System.Drawing.Size(86, 22);
+            this.TsBtnSelectRow.Size = new System.Drawing.Size(86, 24);
             this.TsBtnSelectRow.Text = "Select Row";
             // 
             // TsCmbLimitRows
@@ -262,7 +266,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             "100",
             "(All)"});
             this.TsCmbLimitRows.Name = "TsCmbLimitRows";
-            this.TsCmbLimitRows.Size = new System.Drawing.Size(75, 25);
+            this.TsCmbLimitRows.Size = new System.Drawing.Size(75, 27);
             this.TsCmbLimitRows.Text = "(All)";
             this.TsCmbLimitRows.ToolTipText = "Limit Rows";
             // 
@@ -271,10 +275,29 @@ namespace TimeAttendanceManager.MenuDesign.Forms
             this.DgvList.BackgroundColor = System.Drawing.Color.WhiteSmoke;
             this.DgvList.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.DgvList.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.DgvList.Location = new System.Drawing.Point(0, 56);
+            this.DgvList.Location = new System.Drawing.Point(0, 58);
             this.DgvList.Name = "DgvList";
-            this.DgvList.Size = new System.Drawing.Size(784, 383);
+            this.DgvList.Size = new System.Drawing.Size(784, 381);
             this.DgvList.TabIndex = 35;
+            // 
+            // TsBtnNotAssign
+            // 
+            this.TsBtnNotAssign.ForeColor = System.Drawing.Color.IndianRed;
+            this.TsBtnNotAssign.IconChar = FontAwesome.Sharp.IconChar.Folder;
+            this.TsBtnNotAssign.IconColor = System.Drawing.Color.IndianRed;
+            this.TsBtnNotAssign.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.TsBtnNotAssign.IconSize = 20;
+            this.TsBtnNotAssign.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.TsBtnNotAssign.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.TsBtnNotAssign.Name = "TsBtnNotAssign";
+            this.TsBtnNotAssign.Size = new System.Drawing.Size(128, 24);
+            this.TsBtnNotAssign.Text = "Unassigned Forms";
+            this.TsBtnNotAssign.ToolTipText = "Unassigned Forms\r\nForms that are not yet linked to any menu.";
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 27);
             // 
             // FrmModalFormNames
             // 
@@ -329,5 +352,7 @@ namespace TimeAttendanceManager.MenuDesign.Forms
         internal FontAwesome.Sharp.IconToolStripButton TsBtnSelectRow;
         internal System.Windows.Forms.ToolStripComboBox TsCmbLimitRows;
         private System.Windows.Forms.DataGridView DgvList;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+        private FontAwesome.Sharp.IconToolStripButton TsBtnNotAssign;
     }
 }

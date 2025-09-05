@@ -411,6 +411,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <None Include="Config\Unitcodes.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\DataSources\TimeAttendanceManager.Auth.Classes.TableNames.datasource" />
     <None Include="Properties\Settings.settings">

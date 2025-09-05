@@ -1048,7 +1048,7 @@ namespace TimeAttendanceManager.Contractors.Forms
             this.tabPageTips.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.tabPageTips.Name = "tabPageTips";
             this.tabPageTips.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.tabPageTips.Size = new System.Drawing.Size(178, 407);
+            this.tabPageTips.Size = new System.Drawing.Size(178, 415);
             this.tabPageTips.TabIndex = 1;
             this.tabPageTips.Text = "Tips";
             this.tabPageTips.UseVisualStyleBackColor = true;
@@ -1060,7 +1060,7 @@ namespace TimeAttendanceManager.Contractors.Forms
             this.txtHelp.Location = new System.Drawing.Point(3, 4);
             this.txtHelp.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.txtHelp.Name = "txtHelp";
-            this.txtHelp.Size = new System.Drawing.Size(172, 399);
+            this.txtHelp.Size = new System.Drawing.Size(172, 407);
             this.txtHelp.TabIndex = 1;
             this.txtHelp.Text = "";
             // 
