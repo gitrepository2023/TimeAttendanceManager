@@ -192,5 +192,66 @@ namespace TimeAttendanceManager.Helpers.Classes
         }
         #endregion
 
+        #region "SafeComboSelection"
+        /// <summary>
+        /// 06.09.2025
+        /// Safely sets the selected value of a ComboBox.
+        /// Usage:
+        ///        int? weeklyOffDayId = ClassSafeValueHelpers.PubGetSafeInteger(row["WeeklyOffDayId"]);
+        ///        string weeklyOffDay = ClassSafeValueHelpers.PubGetSafeValue(row["WeeklyOffFullName"]);
+        ///if (weeklyOffDayId.HasValue)
+        ///{
+        ///    SafeComboSelection(CmbWeekNames, weeklyOffDayId.Value, weeklyOffDay);
+        ///    }
+        ///else
+        ///{
+        ///    CmbWeekNames.SelectedIndex = -1;
+        ///    CmbWeekNames.Text = string.Empty;
+        ///}
+        /// </summary>
+        /// <param name="combo"></param>
+        /// <param name="value"></param>
+        /// <param name="displayText"></param>
+        /// <returns></returns>
+        public static bool SafeComboSelection(ComboBox combo, object value, string displayText = null)
+        {
+            try
+            {
+                combo.SelectedValue = value;
+
+                // Check if selection was successful
+                if (combo.SelectedValue != null && combo.SelectedValue.Equals(value))
+                {
+                    // Optional: Verify text matches expected
+                    if (!string.IsNullOrEmpty(displayText) && combo.Text != displayText)
+                    {
+                        combo.Text = displayText;
+                    }
+                    return true;
+                }
+                else
+                {
+                    // Selection failed - set text manually
+                    combo.SelectedIndex = -1;
+                    if (!string.IsNullOrEmpty(displayText))
+                    {
+                        combo.Text = displayText;
+                    }
+                    return false;
+                }
+            }
+            catch
+            {
+                combo.SelectedIndex = -1;
+                if (!string.IsNullOrEmpty(displayText))
+                {
+                    combo.Text = displayText;
+                }
+                return false;
+            }
+        }
+
+        #endregion
+
     }
 }

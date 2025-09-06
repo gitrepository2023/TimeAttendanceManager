@@ -1,16 +1,19 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.Win32;
 using static TimeAttendanceManager.Main.Classes.ClassGlobalVariables;
 
 /// <Copyright>
@@ -82,26 +85,26 @@ using static TimeAttendanceManager.Main.Classes.ClassGlobalVariables;
 
 namespace TimeAttendanceManager.Main.Classes
 {
-   public static class ClassGlobalFunctions
+    public static class ClassGlobalFunctions
     {
 
         #region "GetTextSelected"
-            public static void GetTextSelected(TextBox mTextBox)
+        public static void GetTextSelected(TextBox mTextBox)
+        {
+            try
             {
-                try
-                {
-                    // Equivalent of VB's With statement
-                    mTextBox.SelectionStart = 0;
-                    mTextBox.SelectionLength = mTextBox.Text.Length;
+                // Equivalent of VB's With statement
+                mTextBox.SelectionStart = 0;
+                mTextBox.SelectionLength = mTextBox.Text.Length;
 
-                    // Direct cast (CType equivalent)
-                    mTextBox.BackColor = Color.AliceBlue;
-                }
-                catch (Exception ex)
-                {
-                    // Exception handling (empty catch block like original)
-                }
+                // Direct cast (CType equivalent)
+                mTextBox.BackColor = Color.AliceBlue;
             }
+            catch (Exception ex)
+            {
+                // Exception handling (empty catch block like original)
+            }
+        }
         #endregion
 
         #region "GetConnectionStringByUnitCode"
@@ -111,12 +114,12 @@ namespace TimeAttendanceManager.Main.Classes
         /// </summary>
         /// <param name="mUnitCode"></param>
         /// <returns></returns>
-            public static string GetConnectionStringByUnitCode(string mUnitCode)
+        public static string GetConnectionStringByUnitCode(string mUnitCode)
+        {
+            try
             {
-                try
-                {
-                    // Define a dictionary for unit code to connection string mapping
-                    var unitCodeMapping = new Dictionary<string, string>
+                // Define a dictionary for unit code to connection string mapping
+                var unitCodeMapping = new Dictionary<string, string>
                     {
                         { "1400", mySQLDataBasePathNgp },
                         { "3000", mySQLDataBasePathMdk },
@@ -124,27 +127,27 @@ namespace TimeAttendanceManager.Main.Classes
                         { "1500", mySQLDataBasePathBmt }
                     };
 
-                    // Attempt to get the connection string for the given unit code
-                    if (unitCodeMapping.ContainsKey(mUnitCode))
-                    {
-                        return unitCodeMapping[mUnitCode];
-                    }
-                    else
-                    {
-                        // Unknown unit code
-                        return string.Empty;
-                    }
-                }
-                catch (Exception ex)
+                // Attempt to get the connection string for the given unit code
+                if (unitCodeMapping.ContainsKey(mUnitCode))
                 {
-                    MessageBox.Show(ex.Message, "GetConnectionStringByUnitCode", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return unitCodeMapping[mUnitCode];
+                }
+                else
+                {
+                    // Unknown unit code
                     return string.Empty;
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "GetConnectionStringByUnitCode", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return string.Empty;
+            }
         }
         #endregion
 
         #region "GetLocalIPV4"
-        
+
         /// <summary>
         /// http://stackoverflow.com/questions/2546225/ip-address-lookup-in-vb-net-xp-vs-windows-7
         /// IP Address Lookup in VB.net (XP vs Windows 7)
@@ -697,7 +700,7 @@ namespace TimeAttendanceManager.Main.Classes
             string valueMember,
             ComboBox comboBox,
             string tableName,
-            string userRowGuid,                 
+            string userRowGuid,
             string fallbackUnitCode = null)
         {
             try
@@ -752,7 +755,7 @@ namespace TimeAttendanceManager.Main.Classes
                 using (var connection = new SqlConnection(connectionString))
                 using (var command = new SqlCommand(query, connection))
                 {
-                    command.Parameters.Add("@UserRowGuid", SqlDbType.NVarChar, 150).Value = userRowGuid; 
+                    command.Parameters.Add("@UserRowGuid", SqlDbType.NVarChar, 150).Value = userRowGuid;
                     await connection.OpenAsync().ConfigureAwait(false);
 
                     using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
@@ -825,6 +828,161 @@ namespace TimeAttendanceManager.Main.Classes
             // or use a proper ORM/library that handles parameterization of identifiers
             return "[" + identifier.Replace("]", "]]") + "]";
         }
+        #endregion
+
+        #region "FillComboBoxSafeAsync"
+        /// <summary>
+        /// 06.09.2025     
+        /// </summary>
+        /// <param name="displayMember"></param>
+        /// <param name="valueMember"></param>
+        /// <param name="comboBox"></param>
+        /// <param name="tableName"></param>
+        /// <param name="fallbackUnitCode"></param>
+        /// <param name="selectedValue"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static async Task FillComboBoxSafeAsync(
+            string displayMember,
+            string valueMember,
+            ComboBox comboBox,
+            string tableName,
+            string fallbackUnitCode = null,
+            object selectedValue = null)   // optional selected value (int, long, string, etc.)
+        {
+            if (comboBox == null) throw new ArgumentNullException(nameof(comboBox));
+            if (string.IsNullOrWhiteSpace(displayMember)) throw new ArgumentException("DisplayMember required");
+            if (string.IsNullOrWhiteSpace(valueMember)) throw new ArgumentException("ValueMember required");
+            if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("TableName required");
+
+            string unitCode = string.IsNullOrWhiteSpace(fallbackUnitCode) ? ClassGlobalVariables.pubUnitCode : fallbackUnitCode;
+            string connectionString = ClassGlobalFunctions.GetConnectionStringByUnitCode(unitCode);
+            if (string.IsNullOrWhiteSpace(connectionString)) throw new InvalidOperationException("Connection string empty");
+
+            DataTable dataTable = null;
+
+            // Load data on background thread
+            await Task.Run(async () =>
+            {
+                using (var conn = new SqlConnection(connectionString))
+                using (var cmd = new SqlCommand($"SELECT [{displayMember}], [{valueMember}] FROM [{tableName}] ORDER BY [{displayMember}]", conn))
+                {
+                    await conn.OpenAsync().ConfigureAwait(false);
+                    using (var rdr = await cmd.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        dataTable = new DataTable();
+                        dataTable.Load(rdr);
+                    }
+                }
+            }).ConfigureAwait(false);
+
+            // Now update UI
+            if (comboBox.IsDisposed) return;
+
+            void uiAction()
+            {
+                comboBox.BeginUpdate();
+                try
+                {
+                    // clear and bind
+                    comboBox.DataSource = null;
+                    comboBox.Items.Clear();
+                    comboBox.DataSource = dataTable;
+                    comboBox.DisplayMember = displayMember;
+                    comboBox.ValueMember = valueMember;
+
+                    // default to no selection
+                    comboBox.SelectedIndex = -1;
+
+                    if (selectedValue != null && dataTable.Rows.Count > 0 && dataTable.Columns.Contains(valueMember))
+                    {
+                        // try to convert selectedValue to column type
+                        Type colType = dataTable.Columns[valueMember].DataType;
+                        object converted = null;
+                        bool convertOk = false;
+
+                        try
+                        {
+                            // handle DBNull or nulls gracefully
+                            if (selectedValue is DBNull) { convertOk = false; }
+                            else if (colType == typeof(string)) { converted = selectedValue.ToString(); convertOk = true; }
+                            else
+                            {
+                                // Convert.ChangeType handles numeric conversions (int->long etc.) where safe
+                                converted = Convert.ChangeType(selectedValue, colType);
+                                convertOk = true;
+                            }
+                        }
+                        catch { convertOk = false; }
+
+                        if (convertOk && converted != null)
+                        {
+                            // existence check by string comparison (safe across types)
+                            string convertedStr = converted.ToString();
+                            bool exists = dataTable.AsEnumerable()
+                                                   .Any(r => r[valueMember] != null && r[valueMember] != DBNull.Value &&
+                                                             r[valueMember].ToString() == convertedStr);
+
+                            if (exists)
+                            {
+                                // Temporarily suppress SelectedIndexChanged handlers to avoid reentrancy issues
+                                var handler = GetSelectedIndexChangedHandler(comboBox);
+                                if (handler != null) comboBox.SelectedIndexChanged -= handler;
+
+                                try
+                                {
+                                    comboBox.SelectedValue = converted;
+                                }
+                                finally
+                                {
+                                    if (handler != null) comboBox.SelectedIndexChanged += handler;
+                                }
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    comboBox.EndUpdate();
+                }
+            }
+
+            if (comboBox.InvokeRequired)
+                comboBox.Invoke((MethodInvoker)uiAction);
+            else
+                uiAction();
+        }
+
+        /// <summary>
+        /// Helper: tries to get the first SelectedIndexChanged delegate (if any).
+        /// You can remove this helper if you don't want auto handler detach/reattach.
+        /// </summary>
+        private static EventHandler GetSelectedIndexChangedHandler(ComboBox comboBox)
+        {
+            // Reflection-based lookup of events is not ideal but works when necessary.
+            // If you don't want this complexity, simply skip handler detach/reattach.
+            try
+            {
+                FieldInfo f = typeof(Control).GetField("Events", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (f == null) return null;
+                EventHandlerList list = f.GetValue(comboBox) as EventHandlerList;
+                if (list == null) return null;
+
+                // key for SelectedIndexChanged: lookup via reflection
+                FieldInfo keyField = typeof(ComboBox).GetField("EVENT_SELECTEDINDEXCHANGED", BindingFlags.NonPublic | BindingFlags.Static);
+                if (keyField == null) return null;
+                object key = keyField.GetValue(null);
+                Delegate d = list[key];
+                return d as EventHandler;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         #endregion
 
         #region "LoadSqlServerTodayDate"

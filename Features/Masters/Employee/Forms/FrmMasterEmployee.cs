@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -39,6 +40,17 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
             this.TsBtnFilterClose.Click -= TsBtnFilterClose_Click;
             this.TsMenuViewInActive.Click -= TsMenuViewInActive_Click;
             this.TsMenuViewDeleted.Click -= TsMenuViewDeleted_Click;
+            this.TsBtnAddNew.Click -= TsBtnAddNew_Click;
+            this.TsBtnSave.Click -= TsBtnSave_Click;
+
+            this.TsMenuViewInActive.Click -= TsMenuViewInActive_Click;
+            this.TsMenuViewDeleted.Click -= TsMenuViewDeleted_Click;
+            this.TsBtRefreshDgv.Click -= TsBtRefreshDgv_Click;
+            this.TsBtnClearSearchDgv.Click -= TsBtRefreshDgv_Click;
+            this.TsBtnSearchDgv.Click -= TsBtRefreshDgv_Click;
+            this.TsTxtSearchDgv.KeyDown -= TsTxtSearchDgv_KeyDown;
+            this.TsBtnDrpUnitCode.DropDownItemClicked -= TsBtnDrpBtn_DropDownItemClicked;
+            this.DgvList.CellClick -= DgvList_CellClick;
 
             // Add events
             this.Load += Form_Load;
@@ -53,7 +65,17 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
             this.TsBtnFilterClose.Click += TsBtnFilterClose_Click;
             this.TsMenuViewInActive.Click += TsMenuViewInActive_Click;
             this.TsMenuViewDeleted.Click += TsMenuViewDeleted_Click;
+            this.TsBtnAddNew.Click += TsBtnAddNew_Click;
+            this.TsBtnSave.Click += TsBtnSave_Click;
 
+            this.TsMenuViewInActive.Click += TsMenuViewInActive_Click;
+            this.TsMenuViewDeleted.Click += TsMenuViewDeleted_Click;
+            this.TsBtRefreshDgv.Click += TsBtRefreshDgv_Click;
+            this.TsBtnClearSearchDgv.Click += TsBtRefreshDgv_Click;
+            this.TsBtnSearchDgv.Click += TsBtRefreshDgv_Click;
+            this.TsTxtSearchDgv.KeyDown += TsTxtSearchDgv_KeyDown;
+            this.TsBtnDrpUnitCode.DropDownItemClicked += TsBtnDrpBtn_DropDownItemClicked;
+            this.DgvList.CellClick += DgvList_CellClick;
 
         }
         #endregion
@@ -305,11 +327,11 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 }
                 CmbEmploymentType.Enabled = false;// disable to prevent changes
 
-                await ClassGlobalFunctions.FillComboBoxAsync("CodeAndName", "Id", CmbEmpGender, "v_Master_Genders", ClassGlobalVariables.pubUnitCode);
-                await ClassGlobalFunctions.FillComboBoxAsync("MaritalStatus", "Id", CmbEmpMaritalStatus, "Master_MaritalStatus", ClassGlobalVariables.pubUnitCode);
-                await ClassGlobalFunctions.FillComboBoxAsync("Name", "Id", CmbEmpBloodGroup, "Master_BloodGroups", ClassGlobalVariables.pubUnitCode);
-                await ClassGlobalFunctions.FillComboBoxAsync("FullName", "Id", CmbWeekNames, "Master_WeekNames", ClassGlobalVariables.pubUnitCode);
-
+                await ClassGlobalFunctions.FillComboBoxAsync("CodeAndName", "Id", CmbEmpGender, "v_Master_Genders", defaultUnitCode);
+                await ClassGlobalFunctions.FillComboBoxAsync("MaritalStatus", "Id", CmbEmpMaritalStatus, "Master_MaritalStatus", defaultUnitCode);
+                await ClassGlobalFunctions.FillComboBoxAsync("Name", "Id", CmbEmpBloodGroup, "Master_BloodGroups", defaultUnitCode);
+                await ClassGlobalFunctions.FillComboBoxAsync("FullName", "Id", CmbWeekNames, "Master_WeekNames", defaultUnitCode);
+               
                 // Get SQL Server Today's date
                 DateTime safeDate = ClassGlobalVariables.SqlServerTodayDate.HasValue
                     ? ClassGlobalVariables.SqlServerTodayDate.Value.Date
@@ -327,6 +349,9 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 PgridFilter.SelectedObject = mFilter;
                 PgridFilter.ToolbarVisible = false;
                 PgridFilter.CommandsVisibleIfAvailable = true;
+
+                // Load DataGridView
+                await LoadDataGridViewAsync();
 
             }
             catch (Exception ex)
@@ -636,6 +661,7 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                     DgvList.Rows.Clear();
                     DgvList.Columns.Clear();
                     DgvList.Refresh();
+                    DgvList.ReadOnly = true;
                     DgvList.Visible = false;
                 }));
 
@@ -806,7 +832,7 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                         DgvList.ColumnHeadersVisible = true;
                         DgvList.AllowUserToAddRows = false;
                         DgvList.AllowUserToDeleteRows = false;
-                        DgvList.ReadOnly = false;
+                        DgvList.ReadOnly = true;
                         DgvList.RowHeadersWidth = 60;
                         DgvList.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
                         DgvList.AlternatingRowsDefaultCellStyle.BackColor = Color.AliceBlue;
@@ -862,7 +888,6 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
         }
         #endregion
 
-
         #region "AddColumnVisibilityDgvItems"
         /// <summary>
         /// call AddColumnVisibilityMenuItems() when you need to populate the dropdown
@@ -905,6 +930,331 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
 
                 // Add to dropdown
                 TsBtnDrpDgvCols.DropDownItems.Add(menuItem);
+            }
+        }
+        #endregion
+
+        #region "DgvList_CellClick"
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void DgvList_CellClick(object sender, System.Windows.Forms.DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                if (DgvList.Rows.Count == 0)
+                    return;
+
+                DataGridViewSelectedRowCollection selectedRows = DgvList.SelectedRows;
+
+                if (selectedRows.Count > 1)
+                    throw new Exception("Please select only one row at a time");
+
+                await DisplaySelectedRowDataAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "DataGrid Click", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+        #endregion
+
+        #region "DisplaySelectedRowDataAsync"
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private async Task DisplaySelectedRowDataAsync()
+        {
+            try
+            {
+                // Update status
+                TsLblInputStatus.Text = "Displaying data. Please wait...";
+                TsLblInputStatus.ForeColor = Color.DarkBlue;
+                Application.DoEvents();
+
+                // Check if there are rows
+                if (DgvList.Rows.Count == 0)
+                    return;
+
+                // Validate single selection
+                var selectedRows = DgvList.SelectedRows;
+                if (selectedRows.Count > 1)
+                {
+                    throw new Exception("Please select only one row at a time");
+                }
+
+                // Clear existing values
+                ClearInputs();
+
+                // Get selected row ID
+                int rowId = 0;
+                foreach (DataGridViewRow selectedRow in selectedRows)
+                {
+                    if (selectedRow.Cells["Id"].Value != null && selectedRow.Cells["Id"].Value != DBNull.Value)
+                    {
+                        if (!int.TryParse(selectedRow.Cells["Id"].Value.ToString(), out rowId))
+                        {
+                            MessageBox.Show("Invalid Item selected", "Select Item");
+                            return;
+                        }
+                        break;
+                    }
+                }
+
+                TsTxtRecordId.Text = rowId.ToString();
+                TsTxtRecordId.Tag = null;
+
+                // Get data for selected row
+
+                TsLblInputStatus.Text = "Fetching row. Please wait...";
+                TsLblInputStatus.ForeColor = Color.DarkBlue;
+
+                string mTableName = "dbo.v_Master_Employees";
+
+                string mUnitCode = (CmbUnitCode == null || string.IsNullOrWhiteSpace(CmbUnitCode.Text))
+                   ? ClassGlobalVariables.pubUnitCode
+                   : CmbUnitCode.Text;
+
+                // Fetch from sql table
+                DataTable dt = await ClassDbHelpers.GetSelectedRowDataAsync(
+                    rowId: rowId,
+                    tableName: mTableName,
+                    unitCode: mUnitCode);
+
+                if (dt == null || dt.Rows.Count == 0)
+                {
+                    TsLblInputStatus.Text = "...";
+                    return;
+                }
+
+                // Populate controls with data
+                DataRow row = dt.Rows[0];
+                TsTxtRecordId.Tag = ClassSafeValueHelpers.PubGetSafeInteger(row["RowVersion"]);
+                CmbUnitCode.Text = ClassSafeValueHelpers.PubGetSafeValue(row["UnitCode"]);
+                TxtEmpCode.Text = ClassSafeValueHelpers.PubGetSafeValue(row["EmployeeCode"]);
+                TxtEmpName.Text = ClassSafeValueHelpers.PubGetSafeValue(row["EmployeeName"]);
+                TxtEmpFatherName.Text = ClassSafeValueHelpers.PubGetSafeValue(row["FathersName"]);
+                TxtEmpLastName.Text = ClassSafeValueHelpers.PubGetSafeValue(row["LastName"]);
+                TxtEmpDisplayName.Text = ClassSafeValueHelpers.PubGetSafeValue(row["EmployeeDisplayName"]);
+
+                int? empGenderId = ClassSafeValueHelpers.PubGetSafeInteger(row["EmpGenderId"]);
+                string genderCodeAndName = ClassSafeValueHelpers.PubGetSafeValue(row["GenderCodeAndName"]);
+                if (empGenderId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbEmpGender, empGenderId.Value, genderCodeAndName);
+                }
+                else
+                {
+                    CmbEmpGender.SelectedIndex = -1;
+                    CmbEmpGender.Text = string.Empty;
+                }
+
+                int? maritalStatusId = ClassSafeValueHelpers.PubGetSafeInteger(row["MaritalStatusId"]);
+                string maritalStatus = ClassSafeValueHelpers.PubGetSafeValue(row["MaritalStatus"]);
+                if (maritalStatusId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbEmpMaritalStatus, maritalStatusId.Value, maritalStatus);
+                }
+                else
+                {
+                    CmbEmpMaritalStatus.SelectedIndex = -1;
+                    CmbEmpMaritalStatus.Text = string.Empty;
+                }
+               
+                int? bloodGroupId = ClassSafeValueHelpers.PubGetSafeInteger(row["BloodGroupId"]);
+                string bloodGroupName = ClassSafeValueHelpers.PubGetSafeValue(row["BloodGroupName"]);
+                if (bloodGroupId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbEmpBloodGroup, bloodGroupId.Value, bloodGroupName);
+                }
+                else
+                {
+                    CmbEmpBloodGroup.SelectedIndex = -1;
+                    CmbEmpBloodGroup.Text = string.Empty;
+                }
+                
+                int? employeeTypeId = ClassSafeValueHelpers.PubGetSafeInteger(row["EmployeeTypeId"]);
+                string empTypeCatgName = ClassSafeValueHelpers.PubGetSafeValue(row["EmpTypeCatgName"]);
+                if (bloodGroupId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbEmploymentType, employeeTypeId.Value, empTypeCatgName);
+                }
+                else
+                {
+                    CmbEmploymentType.SelectedIndex = -1;
+                    CmbEmploymentType.Text = string.Empty;
+                }
+
+                int? dutyLocationId = ClassSafeValueHelpers.PubGetSafeInteger(row["DutyLocationId"]);
+                string dutyLocCodeAndName = ClassSafeValueHelpers.PubGetSafeValue(row["DutyLocCodeAndName"]);
+                if (dutyLocationId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbDutyLocation, dutyLocationId.Value, dutyLocCodeAndName);
+                }
+                else
+                {
+                    CmbDutyLocation.SelectedIndex = -1;
+                    CmbDutyLocation.Text = string.Empty;
+                }
+
+                int? designationId = ClassSafeValueHelpers.PubGetSafeInteger(row["DesignationId"]);
+                string desigCode = ClassSafeValueHelpers.PubGetSafeValue(row["DesigName"]);
+                if (designationId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbDesig, designationId.Value, desigCode);
+                }
+                else
+                {
+                    CmbDesig.SelectedIndex = -1;
+                    CmbDesig.Text = string.Empty;
+                }
+
+                int? departmentId = ClassSafeValueHelpers.PubGetSafeInteger(row["DepartmentId"]);
+                string departmentCode = ClassSafeValueHelpers.PubGetSafeValue(row["DepartmentCode"]);
+                if (departmentId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbDept, departmentId.Value, departmentCode);
+                }
+                else
+                {
+                    CmbDept.SelectedIndex = -1; // nothing selected
+                    CmbDept.Text = string.Empty;
+                }
+
+                int? jobCategoryId = ClassSafeValueHelpers.PubGetSafeInteger(row["JobCategoryId"]);
+                string jobCategoryCodeAndName = ClassSafeValueHelpers.PubGetSafeValue(row["JobCategoryCodeAndName"]);
+                if (jobCategoryId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbJobCatg, jobCategoryId.Value, jobCategoryCodeAndName);
+                }
+                else
+                {
+                    CmbJobCatg.SelectedIndex = -1; // nothing selected
+                    CmbJobCatg.Text = string.Empty;
+                }
+
+                bool? isOffApplicable = ClassSafeValueHelpers.PubGetSafeBoolean(row["IsActive"]);
+                if (isOffApplicable.HasValue && isOffApplicable.Value)
+                {
+                    ChkWoff.Checked = true;
+                    ChkWoff.Text = "Yes";
+                }
+                else
+                {
+                    ChkWoff.Checked = false;
+                    ChkWoff.Text = "No";
+                }
+
+                int? weeklyOffDayId = ClassSafeValueHelpers.PubGetSafeInteger(row["WeeklyOffDayId"]);
+                string weeklyOffDay = ClassSafeValueHelpers.PubGetSafeValue(row["WeeklyOffFullName"]);
+                if (weeklyOffDayId.HasValue)
+                {
+                   ClassSafeValueHelpers.SafeComboSelection(CmbWeekNames, weeklyOffDayId.Value, weeklyOffDay);
+                }
+                else
+                {
+                    CmbWeekNames.SelectedIndex = -1;
+                    CmbWeekNames.Text = string.Empty;
+                }
+
+                int? gradeCodeId = ClassSafeValueHelpers.PubGetSafeInteger(row["GradeCodeId"]);
+                string jobGradeCode = ClassSafeValueHelpers.PubGetSafeValue(row["JobGradeCode"]);
+                if (gradeCodeId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbJobGrade, gradeCodeId.Value, jobGradeCode);
+                }
+                else
+                {
+                    CmbJobGrade.SelectedIndex = -1; // nothing selected
+                    CmbJobGrade.Text = string.Empty;
+                }
+                
+                int? batchCodeId = ClassSafeValueHelpers.PubGetSafeInteger(row["BatchCodeId"]);
+                string batchName = ClassSafeValueHelpers.PubGetSafeValue(row["BatchName"]);
+                if (batchCodeId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbBatchCode, batchCodeId.Value, batchName);
+                }
+                else
+                {
+                    CmbBatchCode.SelectedIndex = -1; // nothing selected
+                    CmbBatchCode.Text = string.Empty;
+                }
+                
+                int? cardColorId = ClassSafeValueHelpers.PubGetSafeInteger(row["CardColorId"]);
+                string cardColorCode = ClassSafeValueHelpers.PubGetSafeValue(row["CardColorCode"]);
+                if (cardColorId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbCardColor, cardColorId.Value, cardColorCode);
+                }
+                else
+                {
+                    CmbCardColor.SelectedIndex = -1; // nothing selected
+                    CmbCardColor.Text = string.Empty;
+                }
+                
+                int? contractorId = ClassSafeValueHelpers.PubGetSafeInteger(row["ContractorId"]);
+                string contractorName = ClassSafeValueHelpers.PubGetSafeValue(row["ContractorName"]);
+                if (contractorId.HasValue)
+                {
+                    ClassSafeValueHelpers.SafeComboSelection(CmbContractorName, contractorId.Value, contractorName);
+                }
+                else
+                {
+                    CmbContractorName.SelectedIndex = -1; // nothing selected
+                    CmbContractorName.Text = string.Empty;
+                }
+                
+                                
+                TxtReportingMgrCode.Text = ClassSafeValueHelpers.PubGetSafeValue(row["ReportingManagerCode"]);
+                
+                // Nullable DateTime (because our helper returns DateTime?)
+                DateTime? dateOfBirth = ClassSafeValueHelpers.PubGetSafeDate(row["DateOfBirth"]);
+                if (dateOfBirth.HasValue)
+                {
+                    DtPickEmpDOB.Checked = true;
+                    DtPickEmpDOB.Value = dateOfBirth.Value;
+                }
+                else
+                {
+                    DtPickEmpDOB.Checked = false;
+                }
+
+                DateTime? dateOfJoining = ClassSafeValueHelpers.PubGetSafeDate(row["DateOfJoining"]);
+                if (dateOfJoining.HasValue)
+                {
+                    DtPickDOJ.Checked = true;
+                    DtPickDOJ.Value = dateOfJoining.Value;
+                }
+                else
+                {
+                    DtPickDOJ.Checked = false;
+                }
+
+                bool? isDeleted = ClassSafeValueHelpers.PubGetSafeBoolean(row["IsDeleted"]);
+                if (isDeleted.HasValue && isDeleted.Value)
+                {
+                    TsBtnSave.Enabled = false;
+                    TsBtnDelete.Enabled = false;
+                }
+                else
+                {
+                    TsBtnSave.Enabled = true;
+                    TsBtnDelete.Enabled = true;
+                }
+
+                TsLblInputStatus.Text = "...";
+
+            }
+            catch (Exception ex)
+            {
+                TsLblInputStatus.Text = ex.Message;
+                TsLblInputStatus.ForeColor = Color.Red;
+                MessageBox.Show(ex.Message, "Display Selected Row Data",
+                              MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
         #endregion
@@ -1003,7 +1353,7 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 UseWaitCursor = true;
 
                 const string tableName = "dbo.Master_Employees";
-                const string sqlProcedureName = "dbo.usp_Master_Employees_Upsert";
+                const string sqlProcedureName = "dbo.usp_Master_Employees_Insert";
 
                 string defaultUnitCode = CmbUnitCode.Text;
 
@@ -1016,7 +1366,6 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 var parameters = new List<SqlParameter>
                 {
                     ClassDbHelpers.CreateSqlParameter("@UnitCode", SqlDbType.VarChar, myDataTable.UnitCode),
-                    ClassDbHelpers.CreateSqlParameter("@EmployeeCode", SqlDbType.NVarChar, myDataTable.EmployeeCode),
                     ClassDbHelpers.CreateSqlParameter("@EmployeeName", SqlDbType.NVarChar, myDataTable.EmployeeName),
                     ClassDbHelpers.CreateSqlParameter("@FathersName", SqlDbType.NVarChar, myDataTable.FathersName),
                     ClassDbHelpers.CreateSqlParameter("@LastName", SqlDbType.NVarChar, myDataTable.LastName),
@@ -1036,17 +1385,20 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                     ClassDbHelpers.CreateSqlParameter("@ContractorId", SqlDbType.Int, myDataTable.ContractorId),
                     ClassDbHelpers.CreateSqlParameter("@CardColorId", SqlDbType.Int, myDataTable.CardColorId),
                     ClassDbHelpers.CreateSqlParameter("@MaritalStatusId", SqlDbType.Int, myDataTable.MaritalStatusId),
+                    ClassDbHelpers.CreateSqlParameter("@IsWeeklyOffApplicable", SqlDbType.Bit, myDataTable.IsWeeklyOffApplicable),
                     ClassDbHelpers.CreateSqlParameter("@WeeklyOffDayId", SqlDbType.Int, myDataTable.WeeklyOffDayId),
                     ClassDbHelpers.CreateSqlParameter("@BloodGroupId", SqlDbType.Int, myDataTable.BloodGroupId),
 
                     ClassDbHelpers.CreateSqlParameter("@ReportingManagerCode", SqlDbType.NVarChar, myDataTable.ReportingManagerCode),
 
+                    ClassDbHelpers.CreateSqlParameter("@RowId", SqlDbType.Int, myDataTable.Id),
                     ClassDbHelpers.CreateSqlParameter("@RowVersion", SqlDbType.Int, myDataTable.RowVersion),
+                   
                     ClassDbHelpers.CreateSqlParameter("@UserId", SqlDbType.Int, myDataTable.UserId),
                     ClassDbHelpers.CreateSqlParameter("@UserRowGuid", SqlDbType.NVarChar, myDataTable.UserRowGuid.ToString()),
                     ClassDbHelpers.CreateSqlParameter("@IpAddsCreated", SqlDbType.VarChar, myDataTable.IpAddsCreated),
                     ClassDbHelpers.CreateSqlParameter("@HostName", SqlDbType.VarChar, myDataTable.HostName),
-                    ClassDbHelpers.CreateSqlParameter("@RowId", SqlDbType.Int, myDataTable.Id)
+                   
                 };
 
                 using (var connection = new SqlConnection(connectionString))
@@ -1059,6 +1411,20 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
 
                         command.Parameters.AddRange(parameters.ToArray());
 
+                        // Add output parameter for NewId
+                        var newIdParam = new SqlParameter("@NewId", SqlDbType.Int)
+                        {
+                            Direction = ParameterDirection.Output
+                        };
+                        command.Parameters.Add(newIdParam);
+
+                        // Add output parameter for NewTicketNo
+                        var newTicketNoParam = new SqlParameter("@NewTicketNo", SqlDbType.NVarChar, 20)
+                        {
+                            Direction = ParameterDirection.Output
+                        };
+                        command.Parameters.Add(newTicketNoParam);
+
                         // Add output parameter for success status
                         var successParam = new SqlParameter("@Success", SqlDbType.Bit)
                         {
@@ -1068,6 +1434,8 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
 
                         // Execute the command
                         await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+                        string newTicketNo = newTicketNoParam.Value as string;
 
                         bool success = Convert.ToBoolean(successParam.Value);
 
@@ -1234,6 +1602,9 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 ClassLayoutHelper.ClearControlsTableLayout(TableLayout1);
                 ClassLayoutHelper.ClearControlsTableLayout(TableLayout2);
 
+                TsTxtRecordId.Text = string.Empty;
+                TsTxtRecordId.Tag = null;
+
                 TsLblInputStatus.Text = "...";
 
                 // set focus
@@ -1345,8 +1716,11 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 TsLblInputStatus.ForeColor = Color.Red;
                 TsLblInputStatus.Text = "Validating data. Please wait...";
 
+                await Task.Delay(TimeSpan.FromSeconds(0.5)); // 0.5 seconds
+
                 // Remove existing errors
                 ClassLayoutHelper.ClearErrorsTableLayout(TableLayout1, errorProvider1);
+                ClassLayoutHelper.ClearErrorsTableLayout(TableLayout2, errorProvider1);
 
                 // Required control validations
                 ClassValidationHelper.ValidateControl(CmbUnitCode, "Plant Code is required.", errorProvider1, TsLblInputStatus);
@@ -1382,12 +1756,12 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 double exactAge = totalDays / 365.25;
 
                 // Validate Age(must be >= 18)
-                if (exactAge < 18.0)
-                {
-                    string errorMessage = $"Age must be 18 years or above. Current age is {exactAge:F1} years.";
-                    errorProvider1.SetError(DtPickEmpDOB, errorMessage);
-                    throw new Exception(errorMessage);
-                }
+                //if (exactAge < 18.0)
+                //{
+                //    string errorMessage = $"Age must be 18 years or above. Current age is {exactAge:F1} years.";
+                //    errorProvider1.SetError(DtPickEmpDOB, errorMessage);
+                //    throw new Exception(errorMessage);
+                //}
 
                 if (!DtPickDOJ.Checked)
                 {
@@ -1403,8 +1777,29 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                     throw new Exception(errorMessage);
                 }
 
+                // Joining date must be after birth date
+                if (joiningDate <= birthDate)
+                {
+                    string errorMessage = "Joining Date must be after Date of Birth.";
+                    errorProvider1.SetError(DtPickDOJ, errorMessage);
+                    throw new Exception(errorMessage);
+                }
+
+                // Employee must be at least 18 years old at joining
+                //int ageAtJoining = joiningDate.Year - birthDate.Year;
+                //if (joiningDate < birthDate.AddYears(ageAtJoining))
+                //{
+                //    ageAtJoining--; // Adjust if birthday hasn’t occurred yet in joining year
+                //}
+
+                //if (ageAtJoining < 18)
+                //{
+                //    string errorMessage = "Employee must be at least 18 years old at the time of joining.";
+                //    errorProvider1.SetError(DtPickDOJ, errorMessage);
+                //    throw new Exception(errorMessage);
+                //}
+
                 // Length validations
-                ClassValidationHelper.ValidateTextBoxLength(TxtEmpCode, 20, "Employee Code", errorProvider1, TsLblInputStatus);
                 ClassValidationHelper.ValidateTextBoxLength(TxtEmpName, 50, "Name", errorProvider1, TsLblInputStatus);
                 ClassValidationHelper.ValidateTextBoxLength(TxtEmpFatherName, 50, "Father Name", errorProvider1, TsLblInputStatus);
                 ClassValidationHelper.ValidateTextBoxLength(TxtEmpLastName, 50, "Last Name", errorProvider1, TsLblInputStatus);
@@ -1428,12 +1823,28 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 int? selectedDesigId = ClassValidationHelper.ValidateCmbSelectedValue(CmbDesig, "Designation is required.", errorProvider1, TsLblInputStatus);
                 int? selectedJobCatgId = ClassValidationHelper.ValidateCmbSelectedValue(CmbJobCatg, "Job Category is required.", errorProvider1, TsLblInputStatus);
 
+                // Store weekly off applicability
+                bool isWeeklyOffApplicable = ChkWoff.Checked;
                 int? selectedWeekNameId = null;
-                if (!string.IsNullOrWhiteSpace(CmbWeekNames.Text))
+                if (isWeeklyOffApplicable)
                 {
-                    selectedWeekNameId = ClassValidationHelper.ValidateCmbSelectedValue(CmbWeekNames, "Please select a valid Weekly Off Day from the list.", errorProvider1, TsLblInputStatus);
+                    if (CmbWeekNames.SelectedIndex >= 0 && CmbWeekNames.SelectedValue != null)
+                    {
+                        selectedWeekNameId = ClassValidationHelper.ValidateCmbSelectedValue(
+                            CmbWeekNames,
+                            "Please select a valid Weekly Off Day from the list.",
+                            errorProvider1,
+                            TsLblInputStatus
+                        );
+                    }
+                    else
+                    {
+                        string errorMessage = "Weekly Off is applicable, but no day has been selected.";
+                        errorProvider1.SetError(CmbWeekNames, errorMessage);
+                        throw new Exception(errorMessage);
+                    }
                 }
-
+                                
                 int? selectedJobGradeId = null;
                 if (!string.IsNullOrWhiteSpace(CmbJobGrade.Text))
                 {
@@ -1447,7 +1858,7 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 }
 
                 int? selectedCardColorId = null;
-                if (!string.IsNullOrWhiteSpace(CmbBatchCode.Text))
+                if (!string.IsNullOrWhiteSpace(CmbCardColor.Text))
                 {
                     selectedCardColorId = ClassValidationHelper.ValidateCmbSelectedValue(CmbCardColor, "Please select a valid Card Color from the list.", errorProvider1, TsLblInputStatus);
                 }
@@ -1458,6 +1869,37 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                     selectedContractorId = ClassValidationHelper.ValidateCmbSelectedValue(CmbContractorName, "Please select a valid Contractor Name from the list.", errorProvider1, TsLblInputStatus);
                 }
 
+                // get the valid selected RowId
+                int? rowId = null;
+                if (!string.IsNullOrWhiteSpace(TsTxtRecordId.Text))
+                {
+                    if (!int.TryParse(TsTxtRecordId.Text.Trim(), out int parsedId))
+                    {
+                        string errorMessage = "Invalid Employee selected.";
+                        errorProvider1.SetError(TxtEmpCode, errorMessage);
+                        throw new ArgumentException(errorMessage);
+                    }
+                    rowId = parsedId; // Assign the parsed value to the outer variable
+                }
+
+                // get the valid selected RowId
+                int? rowVersion = null;
+                string tagValue = TsTxtRecordId.Tag as string;   // safe cast to string
+
+                if (!string.IsNullOrWhiteSpace(tagValue))
+                {
+                    int parsedId;
+                    if (!int.TryParse(tagValue, out parsedId))
+                    {
+                        string errorMessage = "Invalid Employee selected.";
+                        errorProvider1.SetError(TxtEmpCode, errorMessage);
+                        throw new ArgumentException(errorMessage);
+                    }
+
+                    rowVersion = parsedId; // Assign the parsed value
+                }
+
+                // Validation complete - prepare data object
                 string defaultUnitCode = CmbUnitCode.Text;
 
                 string connectionString = ClassGlobalFunctions.GetConnectionStringByUnitCode(defaultUnitCode);
@@ -1471,7 +1913,8 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
 
                 // Id
                 // Set null as we want to insert new row
-                myDataTable.Id = null;
+                myDataTable.Id = rowId;
+                myDataTable.RowVersion = rowVersion;
 
                 // UnitCode
                 myDataTable.UnitCode = !string.IsNullOrEmpty(CmbUnitCode.Text)
@@ -1499,10 +1942,10 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                     : null;
 
                 // DateOfBirth
-                myDataTable.DateOfBirth = DtPickEmpDOB.Checked ? DtPickEmpDOB.Value.Date : (DateTime?)null;
+                myDataTable.DateOfBirth = DtPickEmpDOB.Checked ? birthDate.Date : (DateTime?)null;
 
                 // DateOfJoining
-                myDataTable.DateOfJoining = DtPickDOJ.Checked ? DtPickDOJ.Value.Date : (DateTime?)null;
+                myDataTable.DateOfJoining = DtPickDOJ.Checked ? joiningDate.Date : (DateTime?)null;
 
                 // EmpGenderId
                 myDataTable.EmpGenderId = selectedGenderId;
@@ -1537,6 +1980,9 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
                 // MaritalStatusId
                 myDataTable.MaritalStatusId = selectedMaritalStatusId;
 
+                // IsWeeklyOffApplicable
+                myDataTable.IsWeeklyOffApplicable = isWeeklyOffApplicable;
+
                 // WeeklyOffDayId
                 myDataTable.WeeklyOffDayId = selectedWeekNameId;
 
@@ -1564,6 +2010,7 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Forms
             }
             catch (Exception ex)
             {
+                TsLblInputStatus.ForeColor = Color.Red;
                 MessageBox.Show(ex.Message, "Validate Input", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return false;
             }

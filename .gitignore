@@ -6,6 +6,7 @@
 
 # Documentation
 [Dd]ocs/
+[Pp]ublish/
 
 # Ignore build outputs inside Setup Project
 SetupProject/SetupTimeAttendanceManager/[Bb]in/

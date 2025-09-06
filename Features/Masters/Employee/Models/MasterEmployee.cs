@@ -78,12 +78,14 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Models
         public int? Id { get; set; }
         public string UnitCode { get; set; }
         public string EmployeeCode { get; set; }
+        public string PunchCardNumber { get; set; }
         public string EmployeeName { get; set; }
         public string FathersName { get; set; }
         public string LastName { get; set; }
         public string EmployeeDisplayName { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public DateTime? DateOfJoining { get; set; }
+        public DateTime? DateOfRetirement { get; set; }
         public int? EmpGenderId { get; set; }
         public int? EmployeeTypeId { get; set; }
         public int? DutyLocationId { get; set; }
@@ -95,9 +97,14 @@ namespace TimeAttendanceManager.Features.Masters.Employee.Models
         public int? ContractorId { get; set; }
         public int? CardColorId { get; set; }
         public int? MaritalStatusId { get; set; }
+        public bool? IsWeeklyOffApplicable { get; set; }
         public int? WeeklyOffDayId { get; set; }
         public int? BloodGroupId { get; set; }
         public string ReportingManagerCode { get; set; }
+        public DateTime? ResignationDate { get; set; }
+        public string ReasonForLeaving { get; set; }
+        public bool? IsServiceExtended { get; set; }
+        public DateTime? ServiceExtendedUpto { get; set; }
         public bool? IsActive { get; set; }
         public bool? IsDeleted { get; set; }
         public int? RowVersion { get; set; }
